@@ -1,9 +1,9 @@
 #ifndef EVENT_HANDLER_H
 #define EVENT_HANDLER_H
 
-/* Abstracción base para todos los manejadores de eventos. Incluye un
+/* Clase base para todos los manejadores de eventos. Incluye un
    descriptor de archivo porque esta implementación de reactor está
-   basada en select/poll/epoll.
+   basada en select/poll/epoll para el dispatcher.
 
    Invariantes de clase:
 
