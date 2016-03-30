@@ -87,6 +87,7 @@ void reactor_set_timeout (reactor* r, int msec, event_handler* h)
     r->timeout.tv_sec = msec / 1000;
     r->timeout.tv_usec = (msec % 1000) * 1000;
     r->tv = r->timeout;
+    h->r = r;
 }
 
 static void do_nothing (event_handler* ev) { }
