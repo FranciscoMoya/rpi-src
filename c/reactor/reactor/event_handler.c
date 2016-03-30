@@ -15,7 +15,10 @@ static void do_nothing (event_handler* ev) { }
 void event_handler_init (event_handler* ev, int fd, event_handler_function handle)
 {
     assert(handle != NULL);
-    ev->fd = fd; ev->handle_events = handle; ev->destroy = do_nothing;
+    ev->fd = fd;
+    ev->r = NULL;
+    ev->handle_events = handle;
+    ev->destroy = do_nothing;
 }
 
 void event_handler_handle_events (event_handler* ev)

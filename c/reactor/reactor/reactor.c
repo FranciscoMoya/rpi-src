@@ -58,6 +58,7 @@ void reactor_add (reactor* r, event_handler* h)
     r->handlers[r->num_handlers++] = h;
     r->max_fd = max(r->max_fd, h->fd);
     reactor_enable(r, h->fd);
+    h->r = r;
 }
 
 static void reactor_erase_handler_for_fd (reactor* r, int fd);

@@ -1,4 +1,4 @@
-#include "event_handler.h"
+#include <reactor/event_handler.h>
 #include <assert.h> /* assert */
 #include <stdlib.h> /* NULL */
 
@@ -13,8 +13,9 @@ int main()
 
 	ev = event_handler_new(-1, fn);
 	assert(ev != NULL);
-	ev->handle_events(ev);
-	assert(calls == 1);
-	ev->destroy(ev);
+	event_handler_handle_events(ev);
+	event_handler_handle_events(ev);
+	assert(calls == 2);
+	event_handler_destroy(ev);
 	return 0;
 }

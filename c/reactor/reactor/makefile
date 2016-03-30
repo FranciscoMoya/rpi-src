@@ -1,4 +1,4 @@
-CFLAGS=-Wall -std=c11 -ggdb
+CFLAGS=-std=c11 -Wall -D_POSIX_C_SOURCE -ggdb -I..
 CC=gcc
 
 CSRC=$(wildcard *.c)
