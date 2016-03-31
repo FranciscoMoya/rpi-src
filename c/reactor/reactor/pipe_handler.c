@@ -7,14 +7,13 @@
 #include <limits.h>
 #include <errno.h>
 
-static void pipe_handler_free(pipe_handler* h);
 static void pipe_handler_free_members(pipe_handler* h);
 
 pipe_handler* pipe_handler_new (event_handler_function handler)
 {
     pipe_handler* h = malloc(sizeof(pipe_handler));
     pipe_handler_init (h, handler);
-    h->parent.destroy = (event_handler_function) pipe_handler_free;
+    h->parent.destroy_self = (event_handler_function) free;
     return h;
 }
 
@@ -22,8 +21,8 @@ void pipe_handler_init (pipe_handler* h, event_handler_function handler)
 {
     pipe2(h->pipe, O_DIRECT);
     event_handler_init (&h->parent, h->pipe[0], handler);
-    h->parent_destroy = h->parent.destroy;
-    h->parent.destroy = (event_handler_function) pipe_handler_free_members;
+    h->destroy_parent_members = h->parent.destroy_members;
+    h->parent.destroy_members = (event_handler_function) pipe_handler_free_members;
 }
 
 void pipe_handler_destroy (pipe_handler* ev)
@@ -50,12 +49,6 @@ int pipe_handler_read (pipe_handler* h, void* buf, size_t max_size)
 
 static void pipe_handler_free_members(pipe_handler* h)
 {
-    h->parent_destroy(&h->parent);
     close(h->pipe[0]); close(h->pipe[1]);
-}
-
-static void pipe_handler_free(pipe_handler* h)
-{
-    pipe_handler_free_members(h);
-    free(h);
+    h->destroy_parent_members(&h->parent);
 }

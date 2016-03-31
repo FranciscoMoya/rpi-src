@@ -13,18 +13,16 @@ struct spawn_handler_ {
     event_handler parent;
     int pid;
     int out;
-    event_handler_function destroy;
+    event_handler_function destroy_parent_members;
 };
 
 spawn_handler* spawn_handler_new (event_handler_function parent_handle,
                                   event_handler_function child_handle);
-
 void spawn_handler_init (spawn_handler* ev,
 			 event_handler_function parent_handle,
 			 event_handler_function child_handle);
-
+void spawn_handler_destroy(spawn_handler* ev);
 int spawn_handler_is_child (spawn_handler* ev);
-
 void spawn_handler_stay_forever_on_child (spawn_handler* ev);
 
 #endif

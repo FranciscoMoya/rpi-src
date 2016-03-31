@@ -14,12 +14,13 @@
 */
 
 #include <reactor/event_handler.h>
+#include <sys/types.h>
 
 typedef struct pipe_handler_ pipe_handler;
 struct pipe_handler_ {
     event_handler parent;
     int pipe[2];
-    event_handler_function parent_destroy;
+    event_handler_function destroy_parent_members;
 };
 
 pipe_handler* pipe_handler_new (event_handler_function handler);

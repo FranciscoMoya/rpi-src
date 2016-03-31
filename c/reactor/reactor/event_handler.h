@@ -20,7 +20,8 @@ struct event_handler_ {
     int fd;
     reactor* r;
     event_handler_function handle_events;
-    event_handler_function destroy;
+    event_handler_function destroy_members;
+    event_handler_function destroy_self;
 };
 
 event_handler* event_handler_new (int fd, event_handler_function handler);

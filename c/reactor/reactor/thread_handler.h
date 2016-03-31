@@ -3,8 +3,7 @@
 
 /* Especialización de pipe_handler. Ejecuta un hilo en paralelo que
    usa una pipe para comunicar datos.  Puede usarse para generar
-   eventos periódicos sin necesidad de timeout. Cuando termina el hilo
-   eleva excepción, por lo que se desinstala automáticamente.
+   eventos periódicos o retardados sin necesidad de timeout.
 */
 
 #include <reactor/pipe_handler.h>
@@ -16,7 +15,7 @@ struct thread_handler_ {
     pipe_handler parent;
     pthread_t thread;
     int cancel;
-    event_handler_function parent_destroy;
+    event_handler_function destroy_parent_members;
 };
 
 thread_handler* thread_handler_new (event_handler_function handler,

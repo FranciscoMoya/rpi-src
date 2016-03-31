@@ -8,18 +8,17 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-static void spawn_handler_destroy(event_handler* ev);
+static void spawn_handler_free_members(event_handler* ev);
 
 spawn_handler* spawn_handler_new (event_handler_function parent_handle,
                                   event_handler_function child_handle)
 {
     spawn_handler* h = malloc(sizeof(spawn_handler));
     spawn_handler_init(h, parent_handle, child_handle);
-    h->destroy = (event_handler_function)free;
+    h->parent.destroy_self = (event_handler_function)free;
     return h;
 }
 
-static void do_nothing(event_handler* ev) {}
 
 void spawn_handler_init (spawn_handler* h,
                               event_handler_function parent_handle,
@@ -29,7 +28,6 @@ void spawn_handler_init (spawn_handler* h,
 
     pipe2(parent_to_child, O_DIRECT);
     pipe2(child_to_parent, O_DIRECT);
-    h->destroy = do_nothing;
     h->pid = fork();
     if (spawn_handler_is_child(h)) {
         event_handler_init(&h->parent, parent_to_child[0], child_handle);
@@ -41,7 +39,14 @@ void spawn_handler_init (spawn_handler* h,
         h->out = parent_to_child[1];
         close(child_to_parent[1]); close(parent_to_child[0]);
     }
-    h->parent.destroy = spawn_handler_destroy;
+    h->destroy_parent_members = h->parent.destroy_members;
+    h->parent.destroy_members = spawn_handler_free_members;
+}
+
+
+void spawn_handler_destroy(spawn_handler* ev)
+{
+    event_handler_destroy(&ev->parent);
 }
 
 
@@ -63,7 +68,7 @@ void spawn_handler_stay_forever_on_child (spawn_handler* ev)
     exit(0);
 }
 
-static void spawn_handler_destroy(event_handler* ev)
+static void spawn_handler_free_members(event_handler* ev)
 {
     spawn_handler* h = (spawn_handler*)ev;
 
@@ -72,6 +77,5 @@ static void spawn_handler_destroy(event_handler* ev)
         kill(h->pid, SIGTERM);
         waitpid(h->pid, NULL, 0);
     }
-
-    h->destroy(ev);
+    h->destroy_parent_members(ev);
 }
