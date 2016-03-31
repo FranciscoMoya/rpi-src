@@ -49,6 +49,9 @@ int pipe_handler_read (pipe_handler* h, void* buf, size_t max_size)
 
 static void pipe_handler_free_members(pipe_handler* h)
 {
+    event_handler* ev = &h->parent;
+    if (ev->r)
+	reactor_disable(ev->r, ev->fd);
     close(h->pipe[0]); close(h->pipe[1]);
     h->destroy_parent_members(&h->parent);
 }

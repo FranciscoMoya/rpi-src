@@ -1,5 +1,6 @@
 #include <reactor/reactor.h>
 #include <reactor/pipe_handler.h>
+#include <reactor/timeout_handler.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,21 +18,20 @@ static void reader(event_handler* ev)
 	reactor_quit(ev->r);
 }
 
-static void writer(event_handler* ev)
-{
-    static int n = 1;
-    if (0 > write(ev->fd, &n, sizeof(n)))
-	Throw Exception(errno, "No pudo escribir");
-    ++n;
-}
 
 int main()
 {
     reactor* r = reactor_new();
     pipe_handler* p = pipe_handler_new(reader);
     reactor_add(r, &p->parent);
-    reactor_set_timeout(r, 500,
-			event_handler_new(p->pipe[1], writer));
+
+    void writer(event_handler* ev) {
+      static int n = 1;
+      pipe_handler_write(p, &n, sizeof(n));
+      ++n;
+    }
+
+    reactor_add(r, (event_handler*)timeout_handler_new(500, writer));
     reactor_run(r);
     reactor_destroy(r);
 }

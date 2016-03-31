@@ -36,7 +36,6 @@ struct reactor_ {
     int max_fd;
     fd_set fds;
     int num_handlers;
-    event_handler* timeout_handler;
     event_handler* handlers[REACTOR_MAX_HANDLERS];
     struct timeval tv, timeout;
     reactor_function destroy;
@@ -52,7 +51,7 @@ void reactor_remove (reactor* r, int fd);
 void reactor_enable (reactor* r, int fd);
 void reactor_disable (reactor* r, int fd);
 
-void reactor_set_timeout(reactor* r, int msecs, event_handler* h);
+void reactor_set_timeout(reactor* r, int msecs);
 void reactor_set_default_timeout(reactor* r);
 void reactor_pause(reactor* r, int do_pause);
 void reactor_quit(reactor* r);

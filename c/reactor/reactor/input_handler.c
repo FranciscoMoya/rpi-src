@@ -25,6 +25,7 @@ static void input_handler_init_members(input_handler* h,
 				       input_handler_function falling_edge);
 static void* input_handler_thread(thread_handler* h);
 static void input_handler_handler(event_handler* ev);
+static void input_handler_free_members (input_handler* h);
 
 
 input_handler* input_handler_new(int inputs[], size_t ninputs,
@@ -79,6 +80,10 @@ static void input_handler_init_members(input_handler* h,
     h->values = calloc(ninputs, sizeof(int));
     memcpy(h->inputs, inputs, ninputs * sizeof(int));
     input_handler_init_inputs(h);
+    
+    event_handler* ev = (event_handler*) h;
+    h->destroy_parent_members = ev->destroy_members;
+    ev->destroy_members = (event_handler_function) input_handler_free_members;
 }
 
 struct timespec remaining_time (const struct timespec* period,
@@ -144,4 +149,12 @@ static void input_handler_handler(event_handler* ev)
 	h->raising_edge(h, input);
     else
 	h->falling_edge(h, -input);
+}
+
+
+static void input_handler_free_members (input_handler* h)
+{
+    h->destroy_parent_members((event_handler*)h);
+    free(h->inputs);
+    free(h->values);
 }
