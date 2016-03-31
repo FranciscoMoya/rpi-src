@@ -43,7 +43,6 @@ void reactor_destroy (reactor* r)
 }
 
 static void reactor_dispatch_event (reactor* r, fd_set* fds);
-static void reactor_demultiplex_events (reactor* r);
 
 void reactor_run (reactor* r)
 {
@@ -122,7 +121,7 @@ static void reactor_dispatch_event (reactor* r, fd_set* fds)
 }
 
 
-static void reactor_demultiplex_events (reactor* r)
+void reactor_demultiplex_events (reactor* r)
 {
     fd_set fds_copy = r->fds;
     int ret = select(r->max_fd+1, &fds_copy, 0, 0, &r->tv);

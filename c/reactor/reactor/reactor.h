@@ -48,6 +48,7 @@ void reactor_run (reactor* r);
 void reactor_add (reactor* r, event_handler* h);
 void reactor_remove (reactor* r, int fd);
 
+void reactor_demultiplex_events (reactor* r);
 void reactor_enable (reactor* r, int fd);
 void reactor_disable (reactor* r, int fd);
 
