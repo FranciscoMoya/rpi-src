@@ -12,7 +12,9 @@ dist:
 		`find . -name \*.c \
 		     -o -name \*.h \
 		     -o -name makefile \
-		     -o -name README \
+		     -o -name \*.md \
+		     -o -name AUTHORS \
+		     -o -name THANKS \
                      -o -name COPYING`
 
 clean:
