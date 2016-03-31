@@ -1,6 +1,8 @@
 #include "event_handler.h"
+#include "reactor.h"
 #include <assert.h>
 #include <stdlib.h>
+
 
 event_handler* event_handler_new (int fd, event_handler_function handler)
 {
@@ -29,6 +31,8 @@ void event_handler_handle_events (event_handler* ev)
 
 void event_handler_destroy (event_handler* ev)
 {
+    if (ev->r)
+	reactor_disable(ev->r, ev->fd);
     ev->destroy_members(ev);
     ev->destroy_self(ev);
 }

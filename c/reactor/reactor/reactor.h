@@ -23,6 +23,7 @@ typedef struct { int error_code; const char* what; } exception;
 define_exception_type(exception);
 extern struct exception_context the_exception_context[1];
 exception Exception(int ec, const char* what);
+#define Assert(expr) do { if (!(expr)) Throw Exception(0, "Assertion error"); } while(0)
 
 #define REACTOR_MAX_HANDLERS 64
 
