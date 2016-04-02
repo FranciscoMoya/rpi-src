@@ -4,8 +4,10 @@
 #include <assert.h>
 
 #define DEFAULT_TIMEOUT 1000
+#define NUM_EXCEPTION_CONTEXTS 4
 
-struct exception_context the_exception_context[1];
+struct exception_context all_exception_contexts[NUM_EXCEPTION_CONTEXTS];
+unsigned current_exception_context = 0;
 
 exception Exception(int ec, const char* what)
 {

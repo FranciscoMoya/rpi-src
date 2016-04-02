@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
-
+    
 static void* producer(thread_handler* h)
 {
     struct timespec t = { .tv_sec = 0, .tv_nsec = 500000000 };

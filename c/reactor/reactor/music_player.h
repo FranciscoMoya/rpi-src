@@ -1,7 +1,7 @@
 #ifndef MUSIC_PLAYER_H
 #define MUSIC_PLAYER_H
 
-/* Clase derivada de spawn_handler que funciona como music player.  El
+/* Clase derivada de process_handler que funciona como music player.  El
    lado del proceso hijo queda oculto al usuario.
 */
 

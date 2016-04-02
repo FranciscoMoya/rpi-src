@@ -1,5 +1,5 @@
 #include <reactor/reactor.h>
-#include <reactor/spawn_handler.h>
+#include <reactor/process_handler.h>
 #include <reactor/delayed_handler.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +7,7 @@
 
 void parent (event_handler* ev)
 {
-    spawn_handler* h = (spawn_handler*) ev;
+    process_handler* h = (process_handler*) ev;
 
     char buf[128];
     int n = read(ev->fd, buf, sizeof(buf));
@@ -22,7 +22,7 @@ void parent (event_handler* ev)
 
 void child (event_handler* ev)
 {
-    spawn_handler* h = (spawn_handler*) ev;
+    process_handler* h = (process_handler*) ev;
 
     char buf[128];
     int n = read(ev->fd, buf, sizeof(buf));
@@ -38,10 +38,10 @@ static void quit(event_handler* ev) { reactor_quit(ev->r); }
 int main()
 {
     reactor* r  = reactor_new();
-    spawn_handler* h = spawn_handler_new(parent, child);
+    process_handler* h = process_handler_new(parent, child);
 
 
-    spawn_handler_stay_forever_on_child(h);
+    process_handler_stay_forever_on_child(h);
     reactor_add(r, &h->parent);
     reactor_add(r, (event_handler*)delayed_handler_new(1000, quit));
     write(h->out, "main", 5);
