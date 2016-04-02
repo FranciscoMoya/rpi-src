@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
-#include <reactor/reactor.h>
 #include <reactor/pipe_handler.h>
+#include <reactor/exception.h>
+#include <reactor/reactor.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>

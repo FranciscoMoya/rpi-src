@@ -1,4 +1,5 @@
 #include <reactor/reactor.h>
+#include <reactor/exception.h>
 #include <reactor/thread_handler.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +11,7 @@ static void* producer(thread_handler* h)
 {
     struct timespec t = { .tv_sec = 0, .tv_nsec = 500000000 };
     for(int i = 1; !h->cancel; ++i) {
-	pipe_handler_write(&h->parent, &i, sizeof(i));
+	pipe_handler_write_ne(&h->parent, &i, sizeof(i));
 	nanosleep(&t, NULL);
     }
     return NULL;

@@ -1,20 +1,10 @@
-#include "reactor.h"
+#include <reactor/reactor.h>
+#include <reactor/exception.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 
 #define DEFAULT_TIMEOUT 1000
-#define NUM_EXCEPTION_CONTEXTS 4
-
-struct exception_context all_exception_contexts[NUM_EXCEPTION_CONTEXTS];
-unsigned current_exception_context = 0;
-
-exception Exception(int ec, const char* what)
-{
-    exception e = { ec, what };
-    return e;
-}
-
 
 static int max(int a, int b) { return a>b? a: b; }
 

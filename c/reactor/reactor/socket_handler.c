@@ -1,5 +1,6 @@
 #include <reactor/socket_handler.h>
 #include <reactor/reactor.h>
+#include <reactor/exception.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <netdb.h>

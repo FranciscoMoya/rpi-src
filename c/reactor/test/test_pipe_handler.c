@@ -1,4 +1,5 @@
 #include <reactor/reactor.h>
+#include <reactor/exception.h>
 #include <reactor/pipe_handler.h>
 #include <reactor/timeout_handler.h>
 #include <stdio.h>
