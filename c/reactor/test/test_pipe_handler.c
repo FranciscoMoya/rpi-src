@@ -35,4 +35,5 @@ int main()
     reactor_add(r, (event_handler*)timeout_handler_new(500, writer));
     reactor_run(r);
     reactor_destroy(r);
+    return 0;
 }

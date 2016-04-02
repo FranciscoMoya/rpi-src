@@ -13,7 +13,7 @@ void handler(event_handler* ev)
     printf("Got [%s]\n", buf);
 }
 
-void test_connector()
+int main()
 {
     reactor* r = reactor_new();
     connector* c = connector_new("localhost", "8888", handler);
@@ -33,15 +33,5 @@ void test_connector()
 
     reactor_add(r, (event_handler*)timeout_handler_new(1000, producer));
     reactor_run(r);
-}
-
-int main()
-{
-    exception e;
-    Try {
-	test_connector();
-    }
-    Catch(e) {
-	perror(e.what);
-    }
+    return 0;
 }
