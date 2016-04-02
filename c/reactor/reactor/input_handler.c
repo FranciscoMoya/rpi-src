@@ -113,7 +113,8 @@ static void input_handler_poll_input(input_handler* h, int i)
     h->values[i] = new_value;
     if (!new_value)
 	pin = -pin;
-    pipe_handler_write((pipe_handler*)h, &pin, sizeof(pin));
+    pipe_handler* ph = (pipe_handler*) h;
+    pipe_handler_write_ne(ph, &pin, sizeof(pin));
 }
 
 

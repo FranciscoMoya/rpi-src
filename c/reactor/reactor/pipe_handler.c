@@ -30,6 +30,16 @@ void pipe_handler_destroy (pipe_handler* ev)
     event_handler_destroy(&ev->parent);
 }
 
+int pipe_handler_write_ne (pipe_handler* h, const void* buf, size_t size)
+{
+    return write(h->pipe[1], buf, size);
+}
+
+int pipe_handler_read_ne (pipe_handler* h, void* buf, size_t max_size)
+{
+    return read(h->pipe[0], buf, max_size);
+}
+
 void pipe_handler_write (pipe_handler* h, const void* buf, size_t size)
 {
     if (size > PIPE_BUF)

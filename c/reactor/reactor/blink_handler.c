@@ -61,12 +61,13 @@ static void* blink_handler_thread(thread_handler* h)
     int n = 2 * bh->nblinks;
     for (int i = 0; i < n; ++i) {
 	if (h->cancel) break;
-	pipe_handler_write(ph, &v, sizeof(v));
+	if (pipe_handler_write_ne(ph, &v, sizeof(v)))
+	    break;
 	nanosleep(&t, NULL);
 	v = !v;
     }
     v = -1;
-    pipe_handler_write(ph, &v, sizeof(v));
+    pipe_handler_write_ne(ph, &v, sizeof(v));
     return NULL;
 }
 

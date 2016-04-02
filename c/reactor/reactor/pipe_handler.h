@@ -29,4 +29,9 @@ void pipe_handler_destroy (pipe_handler* ev);
 void pipe_handler_write (pipe_handler* h, const void* buf, size_t size);
 int  pipe_handler_read (pipe_handler* h, void* buf, size_t max_size);
 
+/* Versión sin excepciones de las anteriores, para cuando no tenemos
+   exception context */
+int pipe_handler_write_ne (pipe_handler* h, const void* buf, size_t size);
+int pipe_handler_read_ne (pipe_handler* h, void* buf, size_t max_size);
+
 #endif

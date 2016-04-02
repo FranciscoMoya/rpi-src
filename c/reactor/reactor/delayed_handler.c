@@ -54,7 +54,7 @@ static void* delayed_handler_thread(thread_handler* h)
 
     int v = 1;
     nanosleep(&t, NULL);
-    pipe_handler_write(ph, &v, sizeof(v));
+    pipe_handler_write_ne(ph, &v, sizeof(v));
     return NULL;
 }
 
