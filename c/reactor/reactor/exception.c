@@ -36,9 +36,9 @@ void print_exception(exception e)
 void print_backtrace(void)
 {
     fprintf(stderr, "Current call trace (last %d):\n",
-	    exception_calltrace_len);
-    backtrace_symbols_fd(exception_calltrace,
-			 exception_calltrace_len,
+	    exception_calltrace_len - 2);
+    backtrace_symbols_fd(exception_calltrace + 2,
+			 exception_calltrace_len - 2,
 			 2);
 }
 

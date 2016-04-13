@@ -1,7 +1,7 @@
 #include <reactor/reactor.h>
 #include <reactor/exception.h>
 #include <reactor/socket_handler.h>
-#include <reactor/timeout_handler.h>
+#include <reactor/periodic_handler.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -19,7 +19,7 @@ int main()
     connector* c = connector_new("localhost", "8888", handler);
     reactor_add(r, (event_handler*)c);
 
-    /* c puede ser liberado en cualquier momento. El timeout tiene que
+    /* c puede ser liberado en cualquier momento. El periodic tiene que
        usar una variable que no pueda cambiar */
     connector c_aux = *c;
     
@@ -31,7 +31,7 @@ int main()
 	connector_send(&c_aux, buf, strlen(buf));
     }
 
-    reactor_add(r, (event_handler*)timeout_handler_new(1000, producer));
+    reactor_add(r, (event_handler*)periodic_handler_new(1000, producer));
     reactor_run(r);
     return 0;
 }

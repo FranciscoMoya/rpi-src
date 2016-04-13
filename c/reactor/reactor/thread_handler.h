@@ -3,7 +3,7 @@
 
 /* Especialización de pipe_handler. Ejecuta un hilo en paralelo que
    usa una pipe para comunicar datos.  Puede usarse para generar
-   eventos periódicos o retardados sin necesidad de timeout.
+   eventos periódicos o retardados sin necesidad de periodic.
 */
 
 #include <reactor/pipe_handler.h>

@@ -13,7 +13,7 @@
 
    running, paused tienen valores 0/1, inicialmente 0
    max_fd = descriptor más alto registrado, inicialmente -1
-   timeout_handler != NULL
+   periodic_handler != NULL
    handler[i] != NULL para i < num_handlers
    destroy != NULL
  */
@@ -31,7 +31,7 @@ struct reactor_ {
     fd_set fds;
     int num_handlers;
     event_handler* handlers[REACTOR_MAX_HANDLERS];
-    struct timeval tv, timeout;
+    struct timeval tv, periodic;
     reactor_function destroy;
 };
 
@@ -46,8 +46,8 @@ void reactor_demultiplex_events (reactor* r);
 void reactor_enable (reactor* r, int fd);
 void reactor_disable (reactor* r, int fd);
 
-void reactor_set_timeout(reactor* r, int msecs);
-void reactor_set_default_timeout(reactor* r);
+void reactor_set_periodic(reactor* r, int msecs);
+void reactor_set_default_periodic(reactor* r);
 void reactor_pause(reactor* r, int do_pause);
 void reactor_quit(reactor* r);
 
