@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define DEFAULT_PERIODIC 1000
+#define DEFAULT_TIMEOUT 1000
 
 static int max(int a, int b) { return a>b? a: b; }
 
@@ -19,6 +19,8 @@ reactor* reactor_new ()
     return r;
 }
 
+static void default_exception (reactor* r, exception e) { }
+
 void reactor_init (reactor* r)
 {
     r->running = r->paused = 0;
@@ -26,7 +28,8 @@ void reactor_init (reactor* r)
     r->max_fd = -1;
     r->num_handlers = 0;
     r->destroy = reactor_destroy_members;
-    reactor_set_default_periodic(r);
+    r->exception = default_exception;
+    reactor_set_default_timeout(r);
 }
 
 void reactor_destroy (reactor* r)
@@ -68,16 +71,16 @@ void reactor_disable (reactor* r, int fd)
     FD_CLR(fd, &r->fds);
 }
 
-void reactor_set_periodic (reactor* r, int msec)
+void reactor_set_timeout (reactor* r, int msec)
 {
-    r->periodic.tv_sec = msec / 1000;
-    r->periodic.tv_usec = (msec % 1000) * 1000;
-    r->tv = r->periodic;
+    r->timeout.tv_sec = msec / 1000;
+    r->timeout.tv_usec = (msec % 1000) * 1000;
+    r->tv = r->timeout;
 }
 
-void reactor_set_default_periodic(reactor* r)
+void reactor_set_default_timeout(reactor* r)
 {
-    reactor_set_periodic(r, DEFAULT_PERIODIC);
+    reactor_set_timeout(r, DEFAULT_TIMEOUT);
 }
 
 void reactor_pause(reactor* r, int do_pause)
@@ -124,7 +127,7 @@ void reactor_demultiplex_events (reactor* r)
         return;
     }
 
-    r->tv = r->periodic;
+    r->tv = r->timeout;
 }
 
 static void reactor_run_handler_or_remove(reactor* r, int i);
@@ -149,6 +152,7 @@ static void reactor_run_handler_or_remove(reactor* r, int i)
     }
     Catch (e) {
 	erase_handler(r->handlers, i, r->num_handlers--);
+	r->exception(r, e);
     }
 }
 

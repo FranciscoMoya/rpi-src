@@ -10,7 +10,7 @@ void thread_handler_stop (thread_handler* h);
 static void thread_handler_free_members (thread_handler* h);
 
 void thread_handler_init_members (thread_handler* h,
-					 event_handler_function handler)
+				  event_handler_function handler)
 {
     pipe_handler_init (&h->parent, handler);
     event_handler* ev = &h->parent.parent;

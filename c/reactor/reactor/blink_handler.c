@@ -46,8 +46,8 @@ static void blink_handler_init_members(blink_handler* h,
     h->period = period;
     h->nblinks = nblinks;
     pinMode(output, OUTPUT);
+    pullUpDnControl(output, PUD_OFF);
 }
-
 
 static void* blink_handler_thread(thread_handler* h)
 {
@@ -61,7 +61,7 @@ static void* blink_handler_thread(thread_handler* h)
     int n = 2 * bh->nblinks;
     for (int i = 0; i < n; ++i) {
 	if (h->cancel) break;
-	if (pipe_handler_write_ne(ph, &v, sizeof(v)))
+	if (0 > pipe_handler_write_ne(ph, &v, sizeof(v)))
 	    break;
 	nanosleep(&t, NULL);
 	v = !v;
