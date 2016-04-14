@@ -2,6 +2,7 @@
 #define REACTOR_H
 
 #include <reactor/event_handler.h>
+#include <reactor/exception.h>
 #include <sys/select.h>
 #include <time.h>
 
@@ -13,15 +14,16 @@
 
    running, paused tienen valores 0/1, inicialmente 0
    max_fd = descriptor más alto registrado, inicialmente -1
-   timeout_handler != NULL
    handler[i] != NULL para i < num_handlers
    destroy != NULL
+   exception != NULL
  */
 
 #define REACTOR_MAX_HANDLERS 64
 
 typedef struct reactor_ reactor;
-typedef void (*reactor_function)(reactor* ev);
+typedef void (*reactor_function)(reactor* r);
+typedef void (*reactor_exception_function)(reactor* r, exception e);
 
 
 struct reactor_ {
@@ -33,6 +35,7 @@ struct reactor_ {
     event_handler* handlers[REACTOR_MAX_HANDLERS];
     struct timeval tv, timeout;
     reactor_function destroy;
+    reactor_exception_function exception;
 };
 
 reactor* reactor_new ();
@@ -50,5 +53,7 @@ void reactor_set_timeout(reactor* r, int msecs);
 void reactor_set_default_timeout(reactor* r);
 void reactor_pause(reactor* r, int do_pause);
 void reactor_quit(reactor* r);
+
+void reactor_set_exception(reactor* r, reactor_exception_function exc);
 
 #endif

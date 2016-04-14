@@ -1,12 +1,9 @@
 #include <reactor/music_player.h>
 #include <reactor/reactor.h>
 #include <reactor/console.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 static int read_key(int fd);
-static void quit_music_player(reactor* r, music_player* mp);
 
 int main(int argc, char* argv[])
 {
@@ -21,7 +18,7 @@ int main(int argc, char* argv[])
     void keyboard(event_handler* ev) {
         int key = read_key(ev->fd);
         if ('q' == key)
-            quit_music_player(r, mp);
+            reactor_quit(r);
         else if (' ' == key)
             music_player_stop(mp);
         else
@@ -33,13 +30,6 @@ int main(int argc, char* argv[])
     reactor_run(r);
     reactor_destroy(r);
     console_restore(0, state);
-}
-
-
-static void quit_music_player(reactor* r, music_player* mp)
-{
-    music_player_stop(mp);
-    reactor_quit(r);
 }
 
 

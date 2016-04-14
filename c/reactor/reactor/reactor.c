@@ -19,6 +19,8 @@ reactor* reactor_new ()
     return r;
 }
 
+static void default_exception (reactor* r, exception e) { }
+
 void reactor_init (reactor* r)
 {
     r->running = r->paused = 0;
@@ -26,6 +28,7 @@ void reactor_init (reactor* r)
     r->max_fd = -1;
     r->num_handlers = 0;
     r->destroy = reactor_destroy_members;
+    r->exception = default_exception;
     reactor_set_default_timeout(r);
 }
 
@@ -149,6 +152,7 @@ static void reactor_run_handler_or_remove(reactor* r, int i)
     }
     Catch (e) {
 	erase_handler(r->handlers, i, r->num_handlers--);
+	r->exception(r, e);
     }
 }
 

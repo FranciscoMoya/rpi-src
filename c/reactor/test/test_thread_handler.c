@@ -36,4 +36,5 @@ int main()
     reactor_add(r, (event_handler*)p);
     reactor_run(r);
     reactor_destroy(r);
+    return 0;
 }

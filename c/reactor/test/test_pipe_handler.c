@@ -1,7 +1,7 @@
 #include <reactor/reactor.h>
 #include <reactor/exception.h>
 #include <reactor/pipe_handler.h>
-#include <reactor/timeout_handler.h>
+#include <reactor/periodic_handler.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -32,7 +32,8 @@ int main()
       ++n;
     }
 
-    reactor_add(r, (event_handler*)timeout_handler_new(500, writer));
+    reactor_add(r, (event_handler*)periodic_handler_new(500, writer));
     reactor_run(r);
     reactor_destroy(r);
+    return 0;
 }
