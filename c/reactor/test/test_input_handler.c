@@ -15,4 +15,5 @@ int main()
     reactor_add(r, (event_handler*) input_handler_new(buttons, 4,
 						      press, release));
     reactor_run(r);
+    return 0;
 }

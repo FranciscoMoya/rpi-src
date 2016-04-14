@@ -18,4 +18,5 @@ int main()
     reactor_add(r, (event_handler*) delayed_handler_new(1500, timeout));
     reactor_add(r, (event_handler*) delayed_handler_new(3000, quit));
     reactor_run(r);
+    return 0;
 }

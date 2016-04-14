@@ -23,4 +23,5 @@ int main()
     reactor_run(r);
     reactor_destroy(r);
     console_restore(0, state);
+    return 0;
 }

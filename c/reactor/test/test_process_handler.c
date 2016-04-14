@@ -48,4 +48,5 @@ int main()
 
     reactor_run(r);
     reactor_destroy(r);
+    return 0;
 }
