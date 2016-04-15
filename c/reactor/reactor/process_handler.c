@@ -11,7 +11,7 @@
 static void process_handler_free_members(event_handler* ev);
 
 process_handler* process_handler_new (event_handler_function parent_handle,
-                                  event_handler_function child_handle)
+				      event_handler_function child_handle)
 {
     process_handler* h = malloc(sizeof(process_handler));
     process_handler_init(h, parent_handle, child_handle);
