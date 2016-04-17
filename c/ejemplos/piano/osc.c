@@ -20,15 +20,15 @@ static struct {
     const char* name;
     const char* format;
     int args;
+    int async;
 } cmd[] = {
-    { "/quit", ",", 0 },
-    { "/d_recv", ",bb", 0 },
-    { "/d_load", ",sb", 0 },
-    { "/d_loadDir", ",sb", 0 },
-    { "/n_free", ",i", 0 },
-    { "/s_new", ",siii", 1 },
-    { "/done", ",s", 0 },
-    { "/fail", ",ss", 0 },
+    { "/quit", ",", 0, 1 },
+    { "/d_recv", ",bi", 0, 1 },
+    { "/d_load", ",s", 0, 1 },
+    { "/n_free", ",i", 0, 0 },
+    { "/s_new", ",siii", 1, 0 },
+    { "/done", ",s", 0, 0 },
+    { "/fail", ",ss", 0, 0 },
     { NULL, NULL }
 };
 
@@ -74,14 +74,11 @@ static size_t copy_string(void* dst, const void* orig);
 static size_t skip_string(const void* orig);
 static size_t copy_blob(void* dst, const void* orig);
 
-void osc_decode_message(const char* in, size_t size_in,
-			char* out, size_t size_out)
+size_t osc_decode_message(const char* in, size_t size_in,
+			  char* out, size_t size_out)
 {
-    size_t len;
+    const char* pi = in;
     char* po = out;
-    const char* pi = in + copy_int(&len, in);
-    if (len > size_in - 4)
-	Throw Exception(0, "Inconsistent OSC message size");
     size_t n = copy_string(po, pi);
     pi += n; po += n;
     const char* format = pi;
@@ -96,7 +93,18 @@ void osc_decode_message(const char* in, size_t size_in,
 	    n = copy_int(po, pi);
 	pi += n; po += n;
     }
+    return po - out;
 }
+
+
+int osc_async(const char* command)
+{
+    for(int i=0; NULL != cmd[i].name ; ++i)
+	if (0 == strcmp(command, cmd[i].name))
+	    return cmd[i].async;
+    Throw Exception(0, "Unknown OSC command");
+}
+
 
 static void append_args(char* format, va_list ap)
 {

@@ -4,14 +4,15 @@
 #include <reactor/socket_handler.h>
 #include <reactor/process_handler.h>
 
-typedef void (*synth_handler_function)(synth_handler* ev, const char* cmd);
-
 typedef struct synth_handler_ synth_handler;
+typedef void (*synth_handler_function)(synth_handler* ev, const char* cmd, size_t size);
+
 struct synth_handler_ {
     connector parent;
     process_handler scsynth;
+    synth_handler_function handler;
     event_handler_function destroy_parent_members;
-    int ready;
+    int done;
 };
 
 
@@ -21,5 +22,6 @@ void synth_handler_init(synth_handler* this,
 void synth_handler_destroy(synth_handler* this);
 
 void synth_handler_send(synth_handler* h, const char* cmd, ...);
+void synth_handler_wait_done(synth_handler* this);
 
 #endif

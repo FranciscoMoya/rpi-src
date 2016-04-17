@@ -2,12 +2,38 @@
 #include <ctype.h>
 #include <stdio.h>
 
+void dump_char(char c);
+void dump(const char* buf, size_t len);
+size_t encode(char* buf, size_t size, const char* cmd, va_list ap);
+void decode(const char* buf, size_t size);
+
+void test(const char* cmd, ...)
+{
+    va_list ap;
+    va_start(ap, cmd);
+
+    char buf[128];
+    size_t len = encode(buf, sizeof(buf), cmd, ap);
+    va_end(ap);
+    decode(buf, len);
+}
+
+int main()
+{
+    test("/d_load", "/home/pi/supercolliderStandaloneRPI2/share/user/synthdefs/sine.scsyndef");
+    test("/s_new", "sine", 1000, 1, 1, NULL);
+    test("/s_new", "sine", 1001, 1, 1, "freq", 900, NULL);
+    test("/n_free", 1000);
+    test("/n_free", 1001);
+    return 0;
+}
+
 void dump_char(char c)
 {
-    if (isalnum(c) || ispunct(c))
+    if (isprint(c))
 	putchar(c);
     else
-	printf("\\%o", c);
+	printf("\\x%02x", c);
 }
 
 void dump(const char* buf, size_t len)
@@ -17,23 +43,16 @@ void dump(const char* buf, size_t len)
     putchar('\n');
 }
 
-void encode(const char* cmd, ...)
+size_t encode(char* buf, size_t size, const char* cmd, va_list ap)
 {
-    va_list ap;
-    char buf[128];
-    size_t len;
-    va_start(ap, cmd);
-    len = osc_encode_message(buf, sizeof(buf), cmd, ap);
-    va_end(ap);
+    size_t len = osc_encode_message(buf, size, cmd, ap);
     dump(buf, len);
+    return len;
 }
 
-int main()
+void decode(const char* buf, size_t size)
 {
-    encode("/d_load", "/home/pi/supercolliderStandaloneRPI2/share/user/synthdefs/sine.scsyndef", NULL, 0);
-    encode("/s_new", "sine", 1000, 1, 1, NULL);
-    encode("/s_new", "sine", 1001, 1, 1, "freq", 900, NULL);
-    encode("/n_free", 1000);
-    encode("/n_free", 1001);
-    return 0;
+    char out[128];
+    size_t len = osc_decode_message(buf, size, out, sizeof(out));
+    dump(out, len);
 }
