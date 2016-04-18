@@ -10,6 +10,20 @@ static const char* syndef(const char* name);
 static int read_key(int fd);
 static void print_osc(synth_handler* ev, const char* cmd, size_t size);
 
+void init_synth(synth_handler* synth)
+{
+    synth_handler_send(synth, "/clearSched");
+    synth_handler_send(synth, "/g_freeAll", 0);
+    synth_handler_send(synth, "/d_loadDir", "/opt/sonic-pi/etc/synthdefs/compiled");
+    synth_handler_wait_done(synth);
+    synth_handler_send(synth, "/b_allocRead", 0, "/opt/sonic-pi/etc/buffers/rand-stream.wav", 0, 0);
+    synth_handler_send(synth, "/g_new", 2, 0, 0);
+    synth_handler_send(synth, "/g_new", 3, 2, 2);
+    synth_handler_send(synth, "/g_new", 4, 2, 3);
+    synth_handler_send(synth, "/g_new", 5, 3, 2);
+    synth_handler_send(synth, "/s_new", "sonic-pi-mixer", 6, 0, 2, "in_bus", 10, NULL);
+    synth_handler_wait_done(synth);
+}
 
 int main() {
     void* state = console_set_raw_mode(0);
@@ -27,8 +41,7 @@ int main() {
     }
 
     reactor_add(r, (event_handler*)synth);
-    synth_handler_send(synth, "/d_load", syndef("sonic-pi-piano"));
-    synth_handler_wait_done(synth);
+    init_synth(synth);
     reactor_add(r, event_handler_new(0, keyboard));
     
     reactor_run(r);

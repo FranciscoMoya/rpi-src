@@ -36,7 +36,7 @@ void synth_handler_init(synth_handler* this,
 {
 
     event_handler* ev = (event_handler*) this;
-    this->done = 0;
+    this->pending_done = 0;
     this->handler = handler;
     process_handler_init(&this->scsynth, do_nothing, do_nothing);
     if (process_handler_is_child(&this->scsynth)) {
@@ -66,13 +66,15 @@ void synth_handler_send(synth_handler* this, const char* cmd, ...)
     size_t size = osc_encode_message(buf, sizeof(buf), cmd, ap);
     va_end(ap);
     connector_send(&this->parent, buf, size);
+    if (osc_async(cmd))
+	++this->pending_done;
 }
 
 
 void synth_handler_wait_done(synth_handler* this)
 {
     event_handler* ev = (event_handler*) this;
-    while(!this->done) {
+    while(this->pending_done) {
         reactor_demultiplex_events(ev->r);
     }
 }
@@ -131,9 +133,8 @@ static void synth_osc_handler(synth_handler* this)
     char in[128], out[128];
     size_t size = synth_recv(this, in, sizeof(in));
     size = osc_decode_message(in, size, out, sizeof(out));
-    if (0 == strcmp(out, "/done") && 0 == strcmp(out + 8, "/d_load") && !this->done) {
-	this->done = 1;
-    }
+    if (0 == strcmp(out, "/done"))
+	--this->pending_done;
     this->handler(this, out, size);
 }
 

@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+int osc_async(const char* command);
 size_t osc_encode_message(char* buf, size_t size,
 			  const char* cmd, va_list ap);
 size_t osc_decode_message(const char* in, size_t size_in,

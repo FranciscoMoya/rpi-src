@@ -23,7 +23,12 @@ static struct {
     int async;
 } cmd[] = {
     { "/quit", ",", 0, 1 },
+    { "/clearSched", ",", 0, 0 },
+    { "/b_allocRead", ",isii", 0, 1 },
+    { "/g_freeAll", ",i", 0, 0 },
+    { "/g_new", ",iii", 0, 0 },
     { "/d_recv", ",bi", 0, 1 },
+    { "/d_loadDir", ",s", 0, 1 },
     { "/d_load", ",s", 0, 1 },
     { "/n_free", ",i", 0, 0 },
     { "/s_new", ",siii", 1, 0 },
