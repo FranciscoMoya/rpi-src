@@ -12,7 +12,7 @@ struct synth_handler_ {
     process_handler scsynth;
     synth_handler_function handler;
     event_handler_function destroy_parent_members;
-    int done;
+    int pending_done;
 };
 
 

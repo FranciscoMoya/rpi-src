@@ -60,7 +60,7 @@ void synth_handler_destroy(synth_handler* this)
 void synth_handler_send(synth_handler* this, const char* cmd, ...)
 {
     printf("Sending %s...\n", cmd);
-    char buf[128];
+    char buf[256];
     va_list ap;
     va_start(ap, cmd);
     size_t size = osc_encode_message(buf, sizeof(buf), cmd, ap);
@@ -90,10 +90,16 @@ static void scsynth_start (synth_handler* this)
     dup2(open("/dev/null", O_RDONLY), 0);
     execlp("/usr/bin/scsynth", "scsynth",
 	   "-t", SCSYNTH_PORT,
-	   "-U", SCSYNTH_UGENS_PATH,
-	   "-l", "1", // solo uno conectado
+	   "-a", "64",
+	   "-m", "131072",
 	   "-D", "0", // no carga synthdefs
 	   "-R", "0", // no se anuncia
+	   "-l", "1", // solo uno conectado
+	   "-z", "128",
+	   "-c", "128",
+	   "-U", SCSYNTH_UGENS_PATH,
+	   "-i", "2",
+	   "-o", "2",
 	   NULL);
 }
 
@@ -130,7 +136,7 @@ static size_t synth_recv(synth_handler* this, char* buf, size_t size)
 
 static void synth_osc_handler(synth_handler* this)
 {
-    char in[128], out[128];
+    char in[256], out[256];
     size_t size = synth_recv(this, in, sizeof(in));
     size = osc_decode_message(in, size, out, sizeof(out));
     if (0 == strcmp(out, "/done"))

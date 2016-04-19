@@ -21,8 +21,8 @@ void test(const char* cmd, ...)
 int main()
 {
     test("/d_load", "/home/pi/supercolliderStandaloneRPI2/share/user/synthdefs/sine.scsyndef");
-    test("/s_new", "sine", 1000, 1, 1, NULL);
-    test("/s_new", "sine", 1001, 1, 1, "freq", 900, NULL);
+    test("/s_new", "", "sine", 1000, 1, 1);
+    test("/s_new", "i", "sine", 1001, 1, 1, "freq", 900);
     test("/n_free", 1000);
     test("/n_free", 1001);
     return 0;

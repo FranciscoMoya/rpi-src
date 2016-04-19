@@ -23,6 +23,7 @@ static struct {
     int async;
 } cmd[] = {
     { "/quit", ",", 0, 1 },
+    { "/status", ",", 0, 0 },
     { "/clearSched", ",", 0, 0 },
     { "/b_allocRead", ",isii", 0, 1 },
     { "/g_freeAll", ",i", 0, 0 },
@@ -41,6 +42,7 @@ static char* encode_str0(char* buf, size_t size, const char* s);
 static char* encode_str(char* buf, size_t size, va_list* ap);
 static char* encode_int(char* buf, size_t size, va_list* ap);
 static char* encode_int0(char* buf, size_t size, unsigned v);
+static char* encode_float(char* buf, size_t size, va_list* ap);
 static char* encode_blob(char* buf, size_t size, va_list* ap);
 
 static struct {
@@ -49,12 +51,13 @@ static struct {
 } types[] = {
     { 's', encode_str },
     { 'i', encode_int },
+    { 'f', encode_float },
     { 'b', encode_blob },
     { '\0', NULL }
 };
 
 
-static void format(const char* cmd, char* format, va_list ap);
+static int format(const char* cmd, char* format, va_list ap);
 static char* encode(char* buf, size_t size, char type, va_list* ap);
 
 
@@ -64,8 +67,9 @@ size_t osc_encode_message(char* buf, size_t size, const char* cmd, va_list ap)
     
     char* p = buf + 4;
     p = encode_str0(p, size - (p-buf), cmd);
-    char fmt[16];
-    format(cmd, fmt, ap);
+    char fmt[32];
+    if (format(cmd, fmt, ap))
+	va_arg(ap, char*);
     p = encode_str0(p, size - (p-buf), fmt);
     char type, *fmtstr = fmt;
     while ((type = *++fmtstr))
@@ -96,6 +100,8 @@ size_t osc_decode_message(const char* in, size_t size_in,
 	    n = copy_blob(po, pi);
 	else if (type == 'i')
 	    n = copy_int(po, pi);
+	else if (type == 'f')
+	    n = copy_int(po, pi);
 	pi += n; po += n;
     }
     return po - out;
@@ -114,29 +120,24 @@ int osc_async(const char* command)
 static void append_args(char* format, va_list ap)
 {
     char type;
-    while((type = *++format))
-	if (type == 's' || type == 'b')
-	    va_arg(ap, char*);
-	else if (type == 'i')
-	    va_arg(ap, unsigned);
-    for(;;) {
-	if (NULL == va_arg(ap, char*)) break;
-	va_arg(ap, unsigned);
+    char* args = va_arg(ap, char*);
+    format += strlen(format);
+    while ((type = *args++)) {
 	*format++ = 's';
-	*format++ = 'i';
+	*format++ = type;
     }
     *format = '\0';
 }
 
 
-static void format(const char* command, char* format, va_list ap)
+static int format(const char* command, char* format, va_list ap)
 {
     for(int i=0; NULL != cmd[i].name ; ++i)
 	if (0 == strcmp(command, cmd[i].name)) {
 	    strcpy(format, cmd[i].format);
 	    if (cmd[i].args)
 		append_args(format, ap);
-	    return;
+	    return cmd[i].args;
 	}
     Throw Exception(0, "Unknown OSC command");
 }
@@ -190,6 +191,13 @@ static char* encode_int0(char* buf, size_t size, unsigned v)
     v = htonl(v);
     memcpy(buf, &v, 4);
     return buf + 4;
+}
+
+
+static char* encode_float(char* buf, size_t size, va_list* ap)
+{
+    float v = va_arg(*ap, double);
+    return encode_int0(buf, size, *(unsigned*)&v);
 }
 
 
