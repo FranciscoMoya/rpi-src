@@ -15,7 +15,7 @@ void handler(event_handler* ev)
 int main()
 {
     reactor* r = reactor_new();
-    reactor_add(r, (event_handler*)acceptor_new("8888", handler));
+    reactor_add(r, (event_handler*)udp_endpoint_new("8888", handler));
     reactor_run(r);
     reactor_destroy(r);
     return 0;

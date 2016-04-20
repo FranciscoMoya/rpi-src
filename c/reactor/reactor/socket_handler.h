@@ -8,41 +8,62 @@
 #include <reactor/event_handler.h>
 #include <netinet/in.h>
 
-typedef struct slave_handler_ slave_handler;
-typedef struct acceptor_ acceptor;
-typedef struct connector_ connector;
-
-struct acceptor_ {
+typedef struct endpoint_ endpoint;
+struct endpoint_ {
     event_handler parent;
     event_handler_function destroy_parent_members;
+};
+
+typedef struct acceptor_ acceptor;
+struct acceptor_ {
+    endpoint parent;
     event_handler_function slave;
 };
 
-struct connector_ {
-    event_handler parent;
-    event_handler_function destroy_parent_members;
-};
+typedef struct endpoint_ connector;
 
+// Generic endpoint
+endpoint* endpoint_new(int sock, 
+		       event_handler_function handler);
+void endpoint_init(endpoint* this, 
+		   int sock, 
+		   event_handler_function handler);
+void endpoint_destroy(endpoint* this);
+void endpoint_send(event_handler* h, const void* buf, size_t size);
+size_t endpoint_recv(event_handler* h, void* buf, size_t size);
+
+
+// Stream-oriented server-side endpoints
 acceptor* acceptor_new(const char* service,
 		       event_handler_function slave);
 void acceptor_init(acceptor* h,
 		   const char* service,
 		   event_handler_function slave);
-void acceptor_destroy(acceptor* h);
+void acceptor_destroy(acceptor* this);
 
-void event_handler_send(event_handler* h, const void* buf, size_t size);
-size_t event_handler_recv(event_handler* h, void* buf, size_t size);
-
-connector* connector_new(const char* host,
-			 const char* service,
-			 event_handler_function handler);
+// Stream-oriented client-side endpoints
+endpoint* connector_new(const char* host,
+			const char* service,
+			event_handler_function handler);
 void connector_init(connector* this,
 		    const char* host,
 		    const char* service,
 		    event_handler_function handler);
-void connector_destroy(connector* this);
 
-void connector_send(connector* h, const void* buf, size_t size);
-size_t connector_recv(connector* h, void* buf, size_t size);
+// Datagram-oriented server-side endpoints
+endpoint* udp_endpoint_new(const char* service,
+			   event_handler_function handler);
+void udp_endpoint_init(endpoint* this,
+		       const char* service,
+		       event_handler_function handler);
+
+// Datagram-oriented client-side endpoints
+endpoint* udp_connector_new(const char* host,
+			    const char* service,
+			    event_handler_function handler);
+void udp_connector_init(endpoint* this,
+			const char* host,
+			const char* service,
+			event_handler_function handler);
 
 #endif

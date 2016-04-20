@@ -17,7 +17,7 @@ void handler(event_handler* ev)
 int main()
 {
     reactor* r = reactor_new();
-    endpoint* c = connector_new("localhost", "8888", handler);
+    endpoint* c = udp_connector_new("localhost", "8888", handler);
     reactor_add(r, (event_handler*)c);
 
     /* c puede ser liberado en cualquier momento. El periodic tiene que

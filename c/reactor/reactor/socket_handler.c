@@ -8,14 +8,52 @@
 #include <string.h>
 #include <errno.h>
 
-
 #define ACCEPTOR_BACKLOG 5
 
-static int master_socket(const char* service);
-static int client_socket(const char* host, const char* service);
-static void acceptor_free_members(acceptor* this);
-static void connector_free_members(connector* this);
-static void event_handler_close_and_free(event_handler* ev);
+
+endpoint* endpoint_new(int sock, 
+		       event_handler_function handler)
+{
+    endpoint* h = malloc(sizeof(endpoint));
+    endpoint_init (h, sock, handler);
+    h->parent.destroy_self = (event_handler_function) free;
+    return h;
+}
+
+
+static void endpoint_free_members(endpoint* this);
+
+void endpoint_init(endpoint* this, 
+		   int sock, 
+		   event_handler_function handler)
+{
+    event_handler_init (&this->parent, sock, handler);
+    this->destroy_parent_members = this->parent.destroy_members;
+    this->parent.destroy_members = (event_handler_function) endpoint_free_members;    
+}
+
+
+void endpoint_destroy(endpoint* this)
+{
+    event_handler_destroy(&h->parent);
+}
+
+
+void endpoint_send(event_handler* h, const void* buf, size_t size)
+{
+    if (0 > write(h->fd, buf, size))
+	Throw Exception(errno, "Imposible enviar");
+}
+
+
+size_t endpoint_recv(event_handler* h, void* buf, size_t size)
+{
+    int ret = read(h->fd, buf, size);
+    if (ret <= 0)
+	Throw Exception(errno, "Imposible leer");
+    return ret;
+}
+
 
 acceptor* acceptor_new(const char* service,
 		       event_handler_function slave)
@@ -26,18 +64,18 @@ acceptor* acceptor_new(const char* service,
     return h;
 }
 
+
+static int master_socket(const char* service);
 static void acceptor_master_handle(acceptor* this);
 
 void acceptor_init(acceptor* h,
 		   const char* service,
 		   event_handler_function slave)
 {
-    int fd = master_socket(service);
-    event_handler_init (&h->parent, fd,
-			(event_handler_function)acceptor_master_handle);
+    int fd = tcp_master_socket(service);
+    endpoint_init (&h->parent, fd,
+		   (event_handler_function)acceptor_master_handle);
     h->slave = slave;
-    h->destroy_parent_members = h->parent.destroy_members;
-    h->parent.destroy_members = (event_handler_function) acceptor_free_members;    
 }
 
 
@@ -47,83 +85,94 @@ void acceptor_destroy(acceptor* h)
 }
 
 
-void event_handler_send(event_handler* h, const void* buf, size_t size)
-{
-    if (0 > write(h->fd, buf, size))
-	Throw Exception(errno, "Imposible enviar");
-}
-
-
-size_t event_handler_recv(event_handler* h, void* buf, size_t size)
-{
-    int ret = read(h->fd, buf, size);
-    if (ret <= 0)
-	Throw Exception(errno, "Imposible leer");
-    return ret;
-}
-
+static int tcp_client_socket(const char* host, const char* service);
+static void event_handler_close_and_free(event_handler* ev);
 
 static void acceptor_master_handle(acceptor* this)
 {
-    event_handler* ev = &this->parent;
+    event_handler* ev = (event_handler*)this;
     int fd = accept(ev->fd, (struct sockaddr*) NULL, NULL);
     if (fd < 0) return;
-    event_handler* slave = event_handler_new(fd, this->slave);
-    slave->destroy_self = event_handler_close_and_free;
-    reactor_add(ev->r, slave);
+    reactor_add(ev->r, endpoint_new(fd, this->slave));
 }
 
 
-connector* connector_new(const char* host,
-			 const char* service,
-			 event_handler_function handler)
+static int tcp_client_socket(const char* host, const char* service)
+
+endpoint* connector_new(const char* host,
+			const char* service,
+			event_handler_function handler)
 {
-    connector* h = malloc(sizeof(connector));
-    connector_init (h, host, service, handler);
-    h->parent.destroy_self = (event_handler_function) free;
-    return h;
+    return endpoint_new(tcp_client_socket(host, service),
+			handler);
 }
 
 
-void connector_init(connector* h,
+void connector_init(endpoint* this,
 		    const char* host,
 		    const char* service,
 		    event_handler_function handler)
 {
-    int fd = client_socket(host, service);
-    event_handler_init (&h->parent, fd, handler);
-    h->destroy_parent_members = h->parent.destroy_members;
-    h->parent.destroy_members = (event_handler_function) connector_free_members;
+    endpoint_init(this, 
+		  tcp_client_socket(host, service),
+		  handler);
 }
 
 
-void connector_destroy(connector* h)
+static int udp_server_socket(const char* service);
+
+endpoint* udp_endpoint_new(const char* service,
+			   event_handler_function handler)
 {
-    event_handler_destroy(&h->parent);
+    return endpoint_new(udp_server_socket(service),
+			handler);
 }
 
 
-void connector_send(connector* h, const void* buf, size_t size)
+void udp_endpoint_init(endpoint* this,
+		       const char* service,
+		       event_handler_function handler)
 {
-    event_handler_send(&h->parent, buf, size);
+    endpoint_init(this, 
+		  udp_server_socket(service),
+		  handler);
 }
 
 
-size_t connector_recv(connector* h, void* buf, size_t size)
+static int udp_client_socket(const char* host, const char* service)
+
+endpoint* udp_connector_new(const char* host,
+			    const char* service,
+			    event_handler_function handler)
 {
-    return event_handler_recv(&h->parent, buf, size);
+    return endpoint_new(udp_client_socket(host, service),
+			handler);
 }
 
 
-static int master_socket(const char* service)
+void udp_connector_init(endpoint* this,
+			const char* host,
+			const char* service,
+			event_handler_function handler)
 {
-    struct sockaddr_in sin;
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = htonl(INADDR_ANY);
+    endpoint_init(this, 
+		  udp_client_socket(host, service),
+		  handler);
+}
 
-    struct servent* se = getservbyname(service, "tcp");
-    sin.sin_port =  (se != NULL? se->s_port : htons(atoi(service)));
+
+static void endpoint_free_members(endpoint* this)
+{
+    this->destroy_parent_members(&this->parent);
+    close(this->parent.fd);
+}
+
+
+struct sockaddr_in tcp_address(const char* host, const char* service);
+
+static int tcp_master_socket(const char* service)
+{
+    struct sockaddr_in sin = tcp_address("0.0.0.0", service);
 
     struct protoent* pe = getprotobyname("tcp");
     Assert(pe != NULL);
@@ -143,19 +192,9 @@ static int master_socket(const char* service)
 }
 
 
-static int client_socket(const char* host, const char* service)
+static int tcp_client_socket(const char* host, const char* service)
 {
-    struct sockaddr_in sin;
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    struct hostent* he = gethostbyname(host);
-    if (he != NULL)
-	memcpy(&sin.sin_addr, he->h_addr_list[0], he->h_length);
-    else
-	sin.sin_addr.s_addr = inet_addr(host);
-
-    struct servent* se = getservbyname(service, "tcp");
-    sin.sin_port =  (se != NULL? se->s_port : htons(atoi(service)));
+    struct sockaddr_in sin = tcp_address(host, service);
 
     struct protoent* pe = getprotobyname("tcp");
     Assert(pe != NULL);
@@ -170,22 +209,71 @@ static int client_socket(const char* host, const char* service)
 }
 
 
-static void acceptor_free_members(acceptor* this)
+struct sockaddr_in udp_address(const char* host, const char* service);
+
+static int udp_server_socket(const char* service)
 {
-    this->destroy_parent_members(&this->parent);
-    close(this->parent.fd);
+    struct sockaddr_in sin = udp_address("0.0.0.0", service);
+
+    struct protoent* pe = getprotobyname("udp");
+    Assert(pe != NULL);
+
+    int fd = socket(PF_INET, SOCK_DGRAM, pe->p_proto);
+    Assert (fd >= 0);
+    
+    if (0 > bind(fd, (struct sockaddr*)&sin, sizeof(sin)))
+	Throw Exception(errno, "Error en bind");
+
+    return fd;
 }
 
 
-static void connector_free_members(connector* this)
+static int udp_client_socket(const char* host, const char* service)
 {
-    this->destroy_parent_members(&this->parent);
-    close(this->parent.fd);
+    struct sockaddr_in sin = udp_address(host, service);
+
+    struct protoent* pe = getprotobyname("udp");
+    Assert(pe != NULL);
+
+    int fd = socket(PF_INET, SOCK_DGRAM, pe->p_proto);
+    Assert (fd >= 0);
+    
+    if (0 > connect(fd, (struct sockaddr*)&sin, sizeof(sin)))
+	Throw Exception(errno, "Error en connect");
+
+    return fd;
 }
 
 
-static void event_handler_close_and_free(event_handler* ev)
+static struct sockaddr_in ip_address(const char* host, 
+				     const char* service, 
+				     const char* proto);
+
+static struct sockaddr_in tcp_address(const char* host, const char* service)
 {
-    close(ev->fd);
-    free(ev);
+    return ip_address(host, service, "tcp");
+}
+
+
+static struct sockaddr_in udp_address(const char* host, const char* service)
+{
+    return ip_address(host, service, "udp");
+}
+
+
+static struct sockaddr_in ip_address(const char* host, 
+				     const char* service, 
+				     const char* proto)
+{
+    struct sockaddr_in sin;
+    memset(&sin, 0, sizeof(*sin));
+    sin.sin_family = AF_INET;
+    struct hostent* he = gethostbyname(host);
+    if (he != NULL)
+	memcpy(&sin.sin_addr, he->h_addr_list[0], he->h_length);
+    else
+	sin.sin_addr.s_addr = inet_addr(host);
+    struct servent* se = getservbyname(service, proto);
+    sin.sin_port = (se != NULL? se->s_port : htons(atoi(service)));
+    return sin;
 }
