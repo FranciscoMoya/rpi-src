@@ -65,7 +65,7 @@ size_t osc_encode_message(char* buf, size_t size, const char* cmd, va_list ap)
 {
     memset(buf, 0, size);
     
-    char* p = buf + 4;
+    char* p = buf;
     p = encode_str0(p, size - (p-buf), cmd);
     char fmt[32];
     if (format(cmd, fmt, ap))
@@ -74,7 +74,6 @@ size_t osc_encode_message(char* buf, size_t size, const char* cmd, va_list ap)
     char type, *fmtstr = fmt;
     while ((type = *++fmtstr))
 	p = encode(p, size - (p-buf), type, &ap);
-    encode_int0(buf, 4, p - buf - 4);
     return p - buf;
 }
 

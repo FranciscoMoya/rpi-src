@@ -8,7 +8,7 @@ typedef struct synth_handler_ synth_handler;
 typedef void (*synth_handler_function)(synth_handler* ev, const char* cmd, size_t size);
 
 struct synth_handler_ {
-    connector parent;
+    endpoint parent;
     process_handler scsynth;
     synth_handler_function handler;
     event_handler_function destroy_parent_members;
