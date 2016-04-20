@@ -83,6 +83,13 @@ void reactor_set_default_timeout(reactor* r)
     reactor_set_timeout(r, DEFAULT_TIMEOUT);
 }
 
+
+void reactor_set_exception(reactor* r, reactor_exception_function e)
+{
+    r->exception = e;
+}
+
+
 void reactor_pause(reactor* r, int do_pause)
 {
     r->paused = do_pause;

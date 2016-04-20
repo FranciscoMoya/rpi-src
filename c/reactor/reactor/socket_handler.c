@@ -35,19 +35,21 @@ void endpoint_init(endpoint* this,
 
 void endpoint_destroy(endpoint* this)
 {
-    event_handler_destroy(&h->parent);
+    event_handler_destroy(&this->parent);
 }
 
 
-void endpoint_send(event_handler* h, const void* buf, size_t size)
+void endpoint_send(endpoint* this, const void* buf, size_t size)
 {
+    event_handler* h = (event_handler*)this;
     if (0 > write(h->fd, buf, size))
 	Throw Exception(errno, "Imposible enviar");
 }
 
 
-size_t endpoint_recv(event_handler* h, void* buf, size_t size)
+size_t endpoint_recv(endpoint* this, void* buf, size_t size)
 {
+    event_handler* h = (event_handler*)this;
     int ret = read(h->fd, buf, size);
     if (ret <= 0)
 	Throw Exception(errno, "Imposible leer");
@@ -59,13 +61,14 @@ acceptor* acceptor_new(const char* service,
 		       event_handler_function slave)
 {
     acceptor* h = malloc(sizeof(acceptor));
+    event_handler* ev = (event_handler*)h;
     acceptor_init (h, service, slave);
-    h->parent.destroy_self = (event_handler_function) free;
+    ev->destroy_self = (event_handler_function) free;
     return h;
 }
 
 
-static int master_socket(const char* service);
+static int tcp_master_socket(const char* service);
 static void acceptor_master_handle(acceptor* this);
 
 void acceptor_init(acceptor* h,
@@ -81,23 +84,22 @@ void acceptor_init(acceptor* h,
 
 void acceptor_destroy(acceptor* h)
 {
-    event_handler_destroy(&h->parent);
+    event_handler_destroy((event_handler*)h);
 }
 
 
 static int tcp_client_socket(const char* host, const char* service);
-static void event_handler_close_and_free(event_handler* ev);
 
 static void acceptor_master_handle(acceptor* this)
 {
     event_handler* ev = (event_handler*)this;
     int fd = accept(ev->fd, (struct sockaddr*) NULL, NULL);
     if (fd < 0) return;
-    reactor_add(ev->r, endpoint_new(fd, this->slave));
+    reactor_add(ev->r, (event_handler*)endpoint_new(fd, this->slave));
 }
 
 
-static int tcp_client_socket(const char* host, const char* service)
+static int tcp_client_socket(const char* host, const char* service);
 
 endpoint* connector_new(const char* host,
 			const char* service,
@@ -139,7 +141,7 @@ void udp_endpoint_init(endpoint* this,
 }
 
 
-static int udp_client_socket(const char* host, const char* service)
+static int udp_client_socket(const char* host, const char* service);
 
 endpoint* udp_connector_new(const char* host,
 			    const char* service,
@@ -168,7 +170,7 @@ static void endpoint_free_members(endpoint* this)
 }
 
 
-struct sockaddr_in tcp_address(const char* host, const char* service);
+static struct sockaddr_in tcp_address(const char* host, const char* service);
 
 static int tcp_master_socket(const char* service)
 {
@@ -209,7 +211,7 @@ static int tcp_client_socket(const char* host, const char* service)
 }
 
 
-struct sockaddr_in udp_address(const char* host, const char* service);
+static struct sockaddr_in udp_address(const char* host, const char* service);
 
 static int udp_server_socket(const char* service)
 {
@@ -266,7 +268,7 @@ static struct sockaddr_in ip_address(const char* host,
 				     const char* proto)
 {
     struct sockaddr_in sin;
-    memset(&sin, 0, sizeof(*sin));
+    memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
     struct hostent* he = gethostbyname(host);
     if (he != NULL)

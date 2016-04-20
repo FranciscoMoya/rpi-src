@@ -29,8 +29,8 @@ void endpoint_init(endpoint* this,
 		   int sock, 
 		   event_handler_function handler);
 void endpoint_destroy(endpoint* this);
-void endpoint_send(event_handler* h, const void* buf, size_t size);
-size_t endpoint_recv(event_handler* h, void* buf, size_t size);
+void endpoint_send(endpoint* this, const void* buf, size_t size);
+size_t endpoint_recv(endpoint* this, void* buf, size_t size);
 
 
 // Stream-oriented server-side endpoints
