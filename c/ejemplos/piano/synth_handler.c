@@ -11,7 +11,7 @@
 #include <stdio.h>
 
 #define SCSYNTH_PORT "9999"
-#define SCSYNTH_UGENS_PATH "/usr/lib/SuperCollider/plugins:/opt/sonic-pi/app/server/native/raspberry/extra-ugens"
+#define SCSYNTH_UGENS_PATH "/opt/sonic-pi/app/server/native/raspberry/extra-ugens:/usr/lib/SuperCollider/plugins"
 
 
 static void do_nothing(event_handler* ev) {}
@@ -36,7 +36,7 @@ void synth_handler_init(synth_handler* this,
 {
 
     event_handler* ev = (event_handler*) this;
-    this->pending_done = 0;
+    this->pending_done = this->notify = 0;
     this->handler = handler;
     process_handler_init(&this->scsynth, do_nothing, do_nothing);
     if (process_handler_is_child(&this->scsynth)) {
@@ -63,18 +63,24 @@ void synth_handler_send(synth_handler* this, const char* cmd, ...)
     char buf[256];
     va_list ap;
     va_start(ap, cmd);
-    size_t size = osc_encode_message(buf, sizeof(buf), cmd, ap);
+    size_t size = osc_encode_message(buf, sizeof(buf), cmd, &ap);
     va_end(ap);
+    if (0 == strcmp(buf, "/notify")) {
+	this->notify = buf[15];
+    }
     endpoint_send(&this->parent, buf, size);
-    if (osc_async(cmd))
+    if ((this->notify && osc_is_notified(cmd)) || osc_has_reply(cmd)) {
+	printf(" ++pending_done [%s]\n", cmd);
 	++this->pending_done;
+    }
 }
 
 
 void synth_handler_wait_done(synth_handler* this)
 {
     event_handler* ev = (event_handler*) this;
-    while(this->pending_done) {
+    ev->r->running = 1;
+    while(this->pending_done && ev->r->running) {
         reactor_demultiplex_events(ev->r);
     }
 }
@@ -82,7 +88,6 @@ void synth_handler_wait_done(synth_handler* this)
 
 static void scsynth_start (synth_handler* this)
 {
-    printf("starting scsynth...\n");
 #ifdef NDEBUG
     dup2(open("/dev/null", O_WRONLY), 1);
     dup2(1, 2);
@@ -118,8 +123,10 @@ static void synth_osc_handler(synth_handler* this)
     char in[256], out[256];
     size_t size = endpoint_recv(&this->parent, in, sizeof(in));
     size = osc_decode_message(in, size, out, sizeof(out));
-    if (0 == strcmp(out, "/done"))
+    if (this->pending_done && osc_is_reply(out)) {
+	printf(" --pending_done [%s]\n", out);
 	--this->pending_done;
+    }
     this->handler(this, out, size);
 }
 

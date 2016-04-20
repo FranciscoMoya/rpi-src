@@ -13,6 +13,7 @@ struct synth_handler_ {
     synth_handler_function handler;
     event_handler_function destroy_parent_members;
     int pending_done;
+    int notify;
 };
 
 

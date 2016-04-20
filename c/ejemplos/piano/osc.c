@@ -2,40 +2,55 @@
 #include <reactor/exception.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <stdio.h>
 
 /* Esto no es una implementación completa de OSC ni pretende
    serlo. Solo codificamos y decodificamos los mensajes que usamos y
-   con restricciones:
-
-   - Mensajes de carga de SynthDefs.
-
-   - Mensaje s_new asumiendo argumentos enteros si los hay.
-
-   - Mensaje n_free con un solo argumento.
-
-   - Notificación done y fail.
+   con restricciones.
  */
 
 static struct {
     const char* name;
     const char* format;
     int args;
-    int async;
+    int reply;
+    int notify;
 } cmd[] = {
-    { "/quit", ",", 0, 1 },
-    { "/status", ",", 0, 0 },
-    { "/clearSched", ",", 0, 0 },
-    { "/b_allocRead", ",isii", 0, 1 },
-    { "/g_freeAll", ",i", 0, 0 },
-    { "/g_new", ",iii", 0, 0 },
-    { "/d_recv", ",bi", 0, 1 },
-    { "/d_loadDir", ",s", 0, 1 },
-    { "/d_load", ",s", 0, 1 },
-    { "/n_free", ",i", 0, 0 },
-    { "/s_new", ",siii", 1, 0 },
-    { "/done", ",s", 0, 0 },
-    { "/fail", ",ss", 0, 0 },
-    { NULL, NULL }
+    { "#bundle",       NULL,         0, 0, 0 },
+    { "/quit",         ",",          0, 0, 0 },
+    { "/status",       ",",          0, 1, 0 },
+    { "/status.reply", ",iiiiiffdd", 0, 0, 0 },
+    { "/clearSched",   ",",          0, 0, 0 },
+    { "/notify",       ",i",         0, 1, 0 },
+    { "/dumpOSC",      ",i",         0, 0, 0 },
+    { "/sync",         ",i",         0, 1, 0 },
+    { "/synced",       ",i",         0, 0, 0 },
+    { "/b_allocRead",  ",isii",      0, 1, 0 },
+    { "/b_query",      ",i",         0, 1, 0 },
+    { "/b_info",       ",iiif",      0, 0, 0 },
+    { "/g_freeAll",    ",i",         0, 0, 0 },
+    { "/g_new",        ",iii",       0, 0, 1 },
+    { "/d_recv",       ",bi",        0, 1, 0 },
+    { "/d_loadDir",    ",s",         0, 1, 0 },
+    { "/d_load",       ",s",         0, 1, 0 },
+    { "/n_free",       ",i",         0, 0, 0 },
+    { "/n_go",         ",iiiiiii",   0, 0, 0 },
+    { "/n_set",        ",i",         1, 0, 0 },
+    { "/n_end",        ",iiiii",     0, 0, 0 },
+    { "/s_new",        ",siii",      1, 0, 1 },
+    { "/done",         ",s",         0, 0, 0 },
+    { "/fail",         ",ss",        0, 0, 0 },
+    { NULL, NULL, 0, 0, 0 }
+};
+
+static const char* replies[] = {
+    "/done",
+    "/fail",
+    "/b_info",
+    "/n_go",
+    "/synced",
+    "/status.reply",
+    NULL
 };
 
 static char* encode_str0(char* buf, size_t size, const char* s);
@@ -44,6 +59,7 @@ static char* encode_int(char* buf, size_t size, va_list* ap);
 static char* encode_int0(char* buf, size_t size, unsigned v);
 static char* encode_float(char* buf, size_t size, va_list* ap);
 static char* encode_blob(char* buf, size_t size, va_list* ap);
+static char* encode_double(char* buf, size_t size, va_list* ap);
 
 static struct {
     char code;
@@ -52,6 +68,7 @@ static struct {
     { 's', encode_str },
     { 'i', encode_int },
     { 'f', encode_float },
+    { 'd', encode_double },
     { 'b', encode_blob },
     { '\0', NULL }
 };
@@ -60,20 +77,40 @@ static struct {
 static int format(const char* cmd, char* format, va_list ap);
 static char* encode(char* buf, size_t size, char type, va_list* ap);
 
+size_t osc_encode_bundle(char* buf, size_t size, va_list* ap);
 
-size_t osc_encode_message(char* buf, size_t size, const char* cmd, va_list ap)
+size_t osc_encode_message(char* buf, size_t size, const char* cmd, va_list* ap)
 {
+    if (0 == strcmp(cmd, "#bundle"))
+	return osc_encode_bundle(buf, size, ap);
+
     memset(buf, 0, size);
-    
     char* p = buf;
     p = encode_str0(p, size - (p-buf), cmd);
     char fmt[32];
-    if (format(cmd, fmt, ap))
-	va_arg(ap, char*);
+    if (format(cmd, fmt, *ap))
+	va_arg(*ap, char*);
     p = encode_str0(p, size - (p-buf), fmt);
     char type, *fmtstr = fmt;
     while ((type = *++fmtstr))
-	p = encode(p, size - (p-buf), type, &ap);
+	p = encode(p, size - (p-buf), type, ap);
+    return p - buf;
+}
+
+size_t osc_encode_bundle(char* buf, size_t size, va_list* ap)
+{
+    char* p = buf;
+    p = encode_str0(p, size - (p-buf), "#bundle");
+    p = encode_int0(p, size - (p-buf), 0);
+    p = encode_int0(p, size - (p-buf), 1);
+    for(;;) {
+	const char* cmd = va_arg(*ap, const char*);
+	if (NULL == cmd) break;
+	p += 4;
+	size_t n = osc_encode_message(p, size - (p-buf), cmd, ap);
+	encode_int0(p - 4, 4, n);
+	p += n;
+    }
     return p - buf;
 }
 
@@ -101,18 +138,39 @@ size_t osc_decode_message(const char* in, size_t size_in,
 	    n = copy_int(po, pi);
 	else if (type == 'f')
 	    n = copy_int(po, pi);
+	else if (type == 'd') {
+	    n = copy_int(po + 4, pi) + copy_int(po, pi + 4);
+	}
 	pi += n; po += n;
     }
     return po - out;
 }
 
 
-int osc_async(const char* command)
+int osc_has_reply(const char* command)
 {
     for(int i=0; NULL != cmd[i].name ; ++i)
 	if (0 == strcmp(command, cmd[i].name))
-	    return cmd[i].async;
+	    return cmd[i].reply;
     Throw Exception(0, "Unknown OSC command");
+}
+
+
+int osc_is_notified(const char* command)
+{
+    for(int i=0; NULL != cmd[i].name ; ++i)
+	if (0 == strcmp(command, cmd[i].name))
+	    return cmd[i].reply || cmd[i].notify;
+    Throw Exception(0, "Unknown OSC command");
+}
+
+
+int osc_is_reply(const char* command)
+{
+    for(int i=0; NULL != replies[i] ; ++i)
+	if (0 == strcmp(command, replies[i]))
+	    return 1;
+    return 0;
 }
 
 
@@ -197,6 +255,14 @@ static char* encode_float(char* buf, size_t size, va_list* ap)
 {
     float v = va_arg(*ap, double);
     return encode_int0(buf, size, *(unsigned*)&v);
+}
+
+
+static char* encode_double(char* buf, size_t size, va_list* ap)
+{
+    double v = va_arg(*ap, double);
+    char* p = encode_int0(buf, size, *(1+(unsigned*)&v));
+    return encode_int0(p, size-4, *(unsigned*)&v);
 }
 
 

@@ -45,7 +45,7 @@ void dump(const char* buf, size_t len)
 
 size_t encode(char* buf, size_t size, const char* cmd, va_list ap)
 {
-    size_t len = osc_encode_message(buf, size, cmd, ap);
+    size_t len = osc_encode_message(buf, size, cmd, &ap);
     dump(buf, len);
     return len;
 }
