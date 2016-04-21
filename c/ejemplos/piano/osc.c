@@ -3,7 +3,6 @@
 #include <string.h>
 #include <sys/time.h>
 #include <arpa/inet.h>
-#include <stdio.h>
 
 /* Esto no es una implementación completa de OSC ni pretende
    serlo. Solo codificamos y decodificamos los mensajes que usamos y
@@ -14,43 +13,38 @@ static struct {
     const char* name;
     const char* format;
     int args;
-    int reply;
-    int notify;
+    int async;
 } cmd[] = {
-    { "#bundle",       NULL,         0, 0, 0 },
-    { "/quit",         ",",          0, 0, 0 },
-    { "/status",       ",",          0, 1, 0 },
-    { "/status.reply", ",iiiiiffdd", 0, 0, 0 },
-    { "/clearSched",   ",",          0, 0, 0 },
-    { "/notify",       ",i",         0, 1, 0 },
-    { "/dumpOSC",      ",i",         0, 0, 0 },
-    { "/sync",         ",i",         0, 1, 0 },
-    { "/synced",       ",i",         0, 0, 0 },
-    { "/b_allocRead",  ",isii",      0, 1, 0 },
-    { "/b_query",      ",i",         0, 1, 0 },
-    { "/b_info",       ",iiif",      0, 0, 0 },
-    { "/g_freeAll",    ",i",         0, 0, 0 },
-    { "/g_new",        ",iii",       0, 0, 1 },
-    { "/d_recv",       ",bi",        0, 1, 0 },
-    { "/d_loadDir",    ",s",         0, 1, 0 },
-    { "/d_load",       ",s",         0, 1, 0 },
-    { "/n_free",       ",i",         0, 0, 0 },
-    { "/n_go",         ",iiiiiii",   0, 0, 0 },
-    { "/n_set",        ",i",         1, 0, 0 },
-    { "/n_end",        ",iiiii",     0, 0, 0 },
-    { "/s_new",        ",siii",      1, 0, 1 },
-    { "/done",         ",s",         0, 0, 0 },
-    { "/fail",         ",ss",        0, 0, 0 },
-    { NULL, NULL, 0, 0, 0 }
+    { "#bundle",       NULL,         0, 0 },
+    { "/quit",         ",",          0, 0 },
+    { "/status",       ",",          0, 1 },
+    { "/status.reply", ",iiiiiffdd", 0, 0 },
+    { "/clearSched",   ",",          0, 0 },
+    { "/notify",       ",i",         0, 1 },
+    { "/dumpOSC",      ",i",         0, 0 },
+    { "/sync",         ",i",         0, 1 },
+    { "/synced",       ",i",         0, 0 },
+    { "/b_allocRead",  ",isii",      0, 1 },
+    { "/b_query",      ",i",         0, 1 },
+    { "/b_info",       ",iiif",      0, 0 },
+    { "/g_freeAll",    ",i",         0, 0 },
+    { "/g_new",        ",iii",       0, 0 },
+    { "/d_recv",       ",bi",        0, 1 },
+    { "/d_loadDir",    ",s",         0, 1 },
+    { "/d_load",       ",s",         0, 1 },
+    { "/n_free",       ",i",         0, 0 },
+    { "/n_go",         ",iiiiiii",   0, 0 },
+    { "/n_set",        ",i",         1, 0 },
+    { "/n_end",        ",iiiii",     0, 0 },
+    { "/s_new",        ",siii",      1, 0 },
+    { "/done",         ",s",         0, 0 },
+    { "/fail",         ",ss",        0, 0 },
+    { NULL,            NULL,         0, 0 }
 };
 
 static const char* replies[] = {
     "/done",
     "/fail",
-    "/b_info",
-    "/n_go",
-    "/synced",
-    "/status.reply",
     NULL
 };
 
@@ -148,25 +142,16 @@ size_t osc_decode_message(const char* in, size_t size_in,
 }
 
 
-int osc_has_reply(const char* command)
+int osc_is_async(const char* command)
 {
     for(int i=0; NULL != cmd[i].name ; ++i)
 	if (0 == strcmp(command, cmd[i].name))
-	    return cmd[i].reply;
+	    return cmd[i].async;
     Throw Exception(0, "Unknown OSC command");
 }
 
 
-int osc_is_notified(const char* command)
-{
-    for(int i=0; NULL != cmd[i].name ; ++i)
-	if (0 == strcmp(command, cmd[i].name))
-	    return cmd[i].reply || cmd[i].notify;
-    Throw Exception(0, "Unknown OSC command");
-}
-
-
-int osc_is_reply(const char* command)
+int osc_is_done(const char* command)
 {
     for(int i=0; NULL != replies[i] ; ++i)
 	if (0 == strcmp(command, replies[i]))
@@ -280,26 +265,11 @@ static char* encode_blob(char* buf, size_t size, va_list* ap)
 }
 
 
-#if 0
-// http://stackoverflow.com/questions/2641954/create-ntp-time-stamp-from-gettimeofday
-const unsigned long long EPOCH = 2208988800ULL;
-const unsigned long long NTP_SCALE_FRAC = 4294967295ULL;
-
-unsigned long long tv_to_ntp(struct timeval tv)
-{
-    unsigned long long tv_ntp, tv_usecs;
-    tv_ntp = tv.tv_sec + EPOCH;
-    tv_usecs = (NTP_SCALE_FRAC * tv.tv_usec) / 1000000UL;
-    return (tv_ntp << 32) | tv_usecs;
-}
-#endif
-
-
 static char* encode_timestamp(char* buf, size_t size)
 {
-    unsigned long long ts = 1; // as soon as possible
-    char* p = encode_int0(buf, size, ((unsigned*)&ts)[1]);
-    return encode_int0(p, size - (p-buf), ((unsigned*)&ts)[0]);
+    // timestamp: 1 -> As soon as possible
+    char* p = encode_int0(buf, size, 0);
+    return encode_int0(p, size - (p-buf), 1);
 }
 
 

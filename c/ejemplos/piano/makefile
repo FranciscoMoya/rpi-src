@@ -9,6 +9,8 @@ all: test_synth_handler test_osc
 piano: piano.o synth_handler.o osc.o
 test_osc: test_osc.o osc.o
 test_osc_synth: test_osc_synth.o osc.o
+
+test_synth_handler: CFLAGS+=-DNDEBUG
 test_synth_handler: test_synth_handler.o synth_handler.o osc.o
 
 clean:

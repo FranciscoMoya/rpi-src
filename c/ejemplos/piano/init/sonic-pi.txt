@@ -26,8 +26,8 @@
 	"/s_new", "sonic-pi-piano", 9, 0, 7, "fi",
 		  "note", 28.0
 		  "out_bus", 12
-	"/n_set", 8, "amp_slide", 1.0
-	"/n_set", 8, "amp", 0
+"/n_set", 8, "amp_slide", 1.0
+"/n_set", 8, "amp", 0
 "/n_free", 8
 "/n_free", 7
 
