@@ -1,6 +1,7 @@
 #include "osc.h"
 #include <reactor/exception.h>
 #include <string.h>
+#include <sys/time.h>
 #include <arpa/inet.h>
 #include <stdio.h>
 
@@ -60,6 +61,7 @@ static char* encode_int0(char* buf, size_t size, unsigned v);
 static char* encode_float(char* buf, size_t size, va_list* ap);
 static char* encode_blob(char* buf, size_t size, va_list* ap);
 static char* encode_double(char* buf, size_t size, va_list* ap);
+static char* encode_timestamp(char* p, size_t size);
 
 static struct {
     char code;
@@ -101,8 +103,7 @@ size_t osc_encode_bundle(char* buf, size_t size, va_list* ap)
 {
     char* p = buf;
     p = encode_str0(p, size - (p-buf), "#bundle");
-    p = encode_int0(p, size - (p-buf), 0);
-    p = encode_int0(p, size - (p-buf), 1);
+    p = encode_timestamp(p, size - (p-buf));
     for(;;) {
 	const char* cmd = va_arg(*ap, const char*);
 	if (NULL == cmd) break;
@@ -276,6 +277,29 @@ static char* encode_blob(char* buf, size_t size, va_list* ap)
     char* p = encode_int0(buf, size, len);
     memcpy(p, blob, len);
     return p + len + padding(len);
+}
+
+
+#if 0
+// http://stackoverflow.com/questions/2641954/create-ntp-time-stamp-from-gettimeofday
+const unsigned long long EPOCH = 2208988800ULL;
+const unsigned long long NTP_SCALE_FRAC = 4294967295ULL;
+
+unsigned long long tv_to_ntp(struct timeval tv)
+{
+    unsigned long long tv_ntp, tv_usecs;
+    tv_ntp = tv.tv_sec + EPOCH;
+    tv_usecs = (NTP_SCALE_FRAC * tv.tv_usec) / 1000000UL;
+    return (tv_ntp << 32) | tv_usecs;
+}
+#endif
+
+
+static char* encode_timestamp(char* buf, size_t size)
+{
+    unsigned long long ts = 1; // as soon as possible
+    char* p = encode_int0(buf, size, ((unsigned*)&ts)[1]);
+    return encode_int0(p, size - (p-buf), ((unsigned*)&ts)[0]);
 }
 
 
