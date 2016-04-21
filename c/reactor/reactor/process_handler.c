@@ -10,6 +10,7 @@
 
 static void process_handler_free_members(event_handler* ev);
 
+
 process_handler* process_handler_new (event_handler_function parent_handle,
 				      event_handler_function child_handle)
 {
@@ -67,6 +68,7 @@ void process_handler_stay_forever_on_child (process_handler* ev)
     reactor_destroy(r);
     exit(0);
 }
+
 
 static void process_handler_free_members(event_handler* ev)
 {

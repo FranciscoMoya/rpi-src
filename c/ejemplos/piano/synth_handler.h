@@ -23,5 +23,6 @@ void synth_handler_destroy(synth_handler* this);
 
 void synth_handler_send(synth_handler* h, const char* cmd, ...);
 void synth_handler_wait_done(synth_handler* this);
+void synth_handler_connect(synth_handler* this);
 
 #endif

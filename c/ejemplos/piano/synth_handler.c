@@ -14,7 +14,6 @@
 
 static void scsynth_start(synth_handler*);
 static void synth_handler_free_members(synth_handler*);
-static void synth_connect(synth_handler*);
 static void synth_osc_handler(synth_handler*);
 static void wait_seconds(int sec);
 static void do_nothing(event_handler* ev) {}
@@ -34,12 +33,14 @@ void synth_handler_init(synth_handler* this,
 			synth_handler_function handler)
 {
     event_handler* ev = (event_handler*) this;
+    udp_connector_init(&this->parent,
+		       "localhost", SCSYNTH_PORT,
+		       (event_handler_function)synth_osc_handler);
     this->pending_done = 0;
     this->handler = handler;
     process_handler_init(&this->scsynth, do_nothing, do_nothing);
     if (process_handler_is_child(&this->scsynth))
 	scsynth_start(this);
-    synth_connect(this);
     this->destroy_parent_members = ev->destroy_members;
     ev->destroy_members = (event_handler_function) synth_handler_free_members;
 }
@@ -67,27 +68,32 @@ void synth_handler_send(synth_handler* this, const char* cmd, ...)
 void synth_handler_wait_done(synth_handler* this)
 {
     event_handler* ev = (event_handler*) this;
+    Assert (ev->r != NULL);
     ev->r->running = 1;
     while(this->pending_done && ev->r->running)
         reactor_demultiplex_events(ev->r);
 }
 
 
-void synth_connect(synth_handler* this)
+void synth_handler_connect(synth_handler* this)
 {
-    for (int i=0; i<10; ++i) {
+    event_handler* ev = (event_handler*) this;
+    Assert (ev->r != NULL);
+    for(;;) {
 	wait_seconds(1);
 	exception e __attribute__((unused));
-	Try udp_connector_init(&this->parent,
-			       "localhost", SCSYNTH_PORT,
-			       (event_handler_function)synth_osc_handler);
-	Catch(e) continue;
-	return;
+	Try {
+	    char buf[256];
+	    synth_handler_send(this, "/status");
+	    endpoint_recv(&this->parent, buf, sizeof(buf));
+	    return;
+	}
+	Catch(e) {
+	}
     }
-    Throw Exception(0, "Process scsynth unreachable");
 }
 
-    
+
 static void scsynth_start (synth_handler* this)
 {
 #ifdef NDEBUG
@@ -97,8 +103,6 @@ static void scsynth_start (synth_handler* this)
     dup2(open("/dev/null", O_RDONLY), 0);
     setenv("SC_JACK_DEFAULT_OUTPUTS",
 	   "system:playback_1,system:playback_2", 0);
-    setenv("SC_SYNTHDEF_PATH",
-	   "/opt/sonic-pi/etc", 0);
     execlp("/usr/bin/scsynth", "scsynth",
 	   "-u", SCSYNTH_PORT,
 	   "-a", "64",
@@ -112,12 +116,14 @@ static void scsynth_start (synth_handler* this)
 	   "-i", "2",
 	   "-o", "2",
 	   NULL);
+    exit(0);
 }
 
 
 static void synth_handler_free_members(synth_handler* this)
 {
     synth_handler_send(this, "/quit");
+    wait_seconds(1);
     process_handler_destroy(&this->scsynth);
     this->destroy_parent_members((event_handler*)this);
 }

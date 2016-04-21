@@ -20,19 +20,18 @@ int main() {
         int key = read_key(ev->fd);
         if ('q' == key)
             reactor_quit(r);
-        else if ('1' == key)
+        else if ('1' <= key && '9' >= key)
 	    synth_handler_send(synth,
 			       "/s_new", "fi",
 			       "sonic-pi-piano", n++, 0, 7,
-			       "note", 28.0,
-			       "out_bus", 12,
-			       NULL);
+			       "note", 60.0 + key - '1',
+			       "out_bus", 12);
     }
 
-    reactor_add(r, (event_handler*)synth);
     reactor_add(r, event_handler_new(0, keyboard));
+    reactor_add(r, (event_handler*)synth);
     init_synth(synth);
-    printf("1 para tocar :e1, q para salir\n");
+    printf("1-9 para tocar :e1, q para salir\n");
     reactor_run(r);
     reactor_destroy(r);
     console_restore(0, state);
@@ -49,6 +48,7 @@ int main() {
  */
 void init_synth(synth_handler* synth)
 {
+    synth_handler_connect(synth);
     synth_handler_send(synth, "/clearSched");
     synth_handler_send(synth, "/g_freeAll", 0);
     synth_handler_send(synth, "/d_loadDir",

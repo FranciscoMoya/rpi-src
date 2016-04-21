@@ -19,6 +19,7 @@ reactor* reactor_new ()
     return r;
 }
 
+
 static void default_exception (reactor* r, exception e) { }
 
 void reactor_init (reactor* r)
@@ -32,10 +33,12 @@ void reactor_init (reactor* r)
     reactor_set_default_timeout(r);
 }
 
+
 void reactor_destroy (reactor* r)
 {
     r->destroy(r);
 }
+
 
 static void reactor_dispatch_event (reactor* r, fd_set* fds);
 
@@ -45,6 +48,7 @@ void reactor_run (reactor* r)
         reactor_demultiplex_events(r);
 }
 
+
 void reactor_add (reactor* r, event_handler* h)
 {
     r->handlers[r->num_handlers++] = h;
@@ -52,6 +56,7 @@ void reactor_add (reactor* r, event_handler* h)
     reactor_enable(r, h->fd);
     h->r = r;
 }
+
 
 static void reactor_erase_handler_for_fd (reactor* r, int fd);
 
@@ -61,15 +66,18 @@ void reactor_remove (reactor* r, int fd)
     reactor_erase_handler_for_fd (r, fd);
 }
 
+
 void reactor_enable (reactor* r, int fd)
 {
     FD_SET(fd, &r->fds);
 }
 
+
 void reactor_disable (reactor* r, int fd)
 {
     FD_CLR(fd, &r->fds);
 }
+
 
 void reactor_set_timeout (reactor* r, int msec)
 {
@@ -77,6 +85,7 @@ void reactor_set_timeout (reactor* r, int msec)
     r->timeout.tv_usec = (msec % 1000) * 1000;
     r->tv = r->timeout;
 }
+
 
 void reactor_set_default_timeout(reactor* r)
 {
@@ -95,6 +104,7 @@ void reactor_pause(reactor* r, int do_pause)
     r->paused = do_pause;
 }
 
+
 void reactor_quit(reactor* r)
 {
     r->running = 0;
@@ -112,6 +122,7 @@ static void reactor_destroy_and_free (reactor* r)
     reactor_destroy_members(r);
     free(r);
 }
+
 
 static void reactor_try_run_handler(reactor* r, int fd);
 
@@ -137,6 +148,7 @@ void reactor_demultiplex_events (reactor* r)
     r->tv = r->timeout;
 }
 
+
 static void reactor_run_handler_or_remove(reactor* r, int i);
 
 static void reactor_try_run_handler(reactor* r, int fd)
@@ -147,6 +159,7 @@ static void reactor_try_run_handler(reactor* r, int fd)
             return;
         }
 }
+
 
 static void erase_handler (event_handler* ev[], int i, int n);
 
@@ -160,8 +173,11 @@ static void reactor_run_handler_or_remove(reactor* r, int i)
     Catch (e) {
 	erase_handler(r->handlers, i, r->num_handlers--);
 	r->exception(r, e);
+	if (!r->num_handlers)
+	    reactor_quit(r);
     }
 }
+
 
 static void reactor_erase_handler_for_fd (reactor* r, int fd)
 {
@@ -169,6 +185,7 @@ static void reactor_erase_handler_for_fd (reactor* r, int fd)
         if (fd == r->handlers[i]->fd)
             erase_handler(r->handlers, i, r->num_handlers--);
 }
+
 
 static void erase_handler (event_handler* ev[], int i, int n)
 {
