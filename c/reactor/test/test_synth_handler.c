@@ -1,4 +1,4 @@
-#include "synth_handler.h"
+#include <reactor/synth_handler.h>
 #include <reactor/reactor.h>
 #include <reactor/console.h>
 #include <unistd.h>

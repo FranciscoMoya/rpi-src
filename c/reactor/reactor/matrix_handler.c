@@ -1,6 +1,6 @@
 #include <reactor/exception.h>
 #include <reactor/thread_handler_private.h>
-#include "matrix_handler.h"
+#include <reactor/matrix_handler.h>
 #include <wiringPi.h>
 #include <stdlib.h>
 #include <string.h>

@@ -1,5 +1,5 @@
 #include <reactor/reactor.h>
-#include "matrix_handler.h"
+#include <reactor/matrix_handler.h>
 #include <wiringPi.h>
 #include <stdio.h>
 

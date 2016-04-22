@@ -12,5 +12,10 @@ all: $(EXES)
 
 %: %.o
 
+
+test_synth_handler: CFLAGS+=-DNDEBUG
+test_synth_handler: LDLIBS+=-llo
+
+
 clean:
 	$(RM) *~ *.o $(EXES)
