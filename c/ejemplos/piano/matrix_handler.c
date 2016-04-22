@@ -138,13 +138,24 @@ static void matrix_handler_poll_input(matrix_handler* h, int i, int j)
 
 
 
+static void matrix_handler_poll_column(matrix_handler* h, int j)
+{
+    for (int i = 0; i < h->nrows; ++i)
+	matrix_handler_poll_input(h, i, j);
+}
+
+
 static void matrix_handler_poll(matrix_handler* h)
 {
+    if (h->ncols == 0) {
+	matrix_handler_poll_column(h, 0);
+	return;
+    }
+    
     for (int j = 0; j < h->ncols; ++j) {
 	digitalWrite(h->cols[(j-1) % h->ncols], 0);
 	digitalWrite(h->cols[j], 1);
-	for (int i = 0; i < h->nrows; ++i)
-	    matrix_handler_poll_input(h, i, j);
+	matrix_handler_poll_column(h, j);
     }
 }
 
