@@ -4,9 +4,10 @@ LDFLAGS=-L../../reactor/reactor -pthread -rdynamic
 LDLIBS=-llo -lreactor -lwiringPi -lpthread
 CC=gcc
 
-all: test_synth_handler test_matrix_handler
+all: piano test_synth_handler test_matrix_handler
 
-piano: piano.o synth_handler.o osc.o
+piano: CFLAGS+=-DNDEBUG
+piano: piano.o synth_handler.o matrix_handler.o
 
 test_synth_handler: CFLAGS+=-DNDEBUG
 test_synth_handler: test_synth_handler.o synth_handler.o
