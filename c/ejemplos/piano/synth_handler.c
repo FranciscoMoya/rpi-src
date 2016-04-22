@@ -1,5 +1,4 @@
 #include "synth_handler.h"
-#include "osc.h"
 #include <reactor/reactor.h>
 #include <unistd.h>
 #include <time.h>
@@ -17,7 +16,6 @@ static void synth_handler_free_members(synth_handler*);
 static void synth_osc_handler(synth_handler*);
 static void wait_seconds(int sec);
 static void do_nothing(event_handler* ev) {}
-
 
 synth_handler* synth_handler_new(synth_handler_function handler)
 {
@@ -52,23 +50,34 @@ void synth_handler_destroy(synth_handler* this)
 }
 
 
-void synth_handler_send(synth_handler* this, const char* cmd, ...)
+void synth_handler_send(synth_handler* this,
+			const char* cmd,
+			const char* types,
+			...)
 {
+    size_t size;
     char buf[256];
+
     va_list ap;
-    va_start(ap, cmd);
-    size_t size = osc_encode_message(buf, sizeof(buf), cmd, &ap);
+    va_start(ap, types);
+    lo_message m = lo_message_new();
+    lo_message_add_varargs(m, types, ap);
+    lo_message_serialise(m, cmd, buf, &size);
+    lo_message_free(m);
     va_end(ap);
+    
     endpoint_send(&this->parent, buf, size);
-    if (osc_is_async(cmd))
-	++this->pending_done;
 }
 
 
-void synth_handler_wait_done(synth_handler* this)
+void synth_handler_sync(synth_handler* this)
 {
+    static int seq = 1000;
     event_handler* ev = (event_handler*) this;
     Assert (ev->r != NULL);
+    this->pending_done = seq;
+    synth_handler_send(this, "/sync", "i", seq++, LO_ARGS_END);
+
     ev->r->running = 1;
     while(this->pending_done && ev->r->running)
         reactor_demultiplex_events(ev->r);
@@ -84,7 +93,7 @@ void synth_handler_connect(synth_handler* this)
 	exception e __attribute__((unused));
 	Try {
 	    char buf[256];
-	    synth_handler_send(this, "/status");
+	    synth_handler_send(this, "/status", NULL, LO_ARGS_END);
 	    endpoint_recv(&this->parent, buf, sizeof(buf));
 	    return;
 	}
@@ -122,7 +131,7 @@ static void scsynth_start (synth_handler* this)
 
 static void synth_handler_free_members(synth_handler* this)
 {
-    synth_handler_send(this, "/quit");
+    synth_handler_send(this, "/quit", NULL, LO_ARGS_END);
     wait_seconds(1);
     process_handler_destroy(&this->scsynth);
     this->destroy_parent_members((event_handler*)this);
@@ -131,12 +140,18 @@ static void synth_handler_free_members(synth_handler* this)
 
 static void synth_osc_handler(synth_handler* this)
 {
-    char in[256], out[256];
-    size_t size = endpoint_recv(&this->parent, in, sizeof(in));
-    size = osc_decode_message(in, size, out, sizeof(out));
-    if (this->pending_done && osc_is_done(out))
-	--this->pending_done;
-    this->handler(this, out, size);
+    char buf[256];
+    size_t size = endpoint_recv(&this->parent, buf, sizeof(buf));
+
+    lo_message m = lo_message_deserialise (buf, size, NULL);
+    Assert(m != NULL);
+    this->handler(this, buf, m);
+
+    if (lo_message_get_argv(m)[0]->i == this->pending_done
+	&& 0 == strcmp("/synced", buf))
+	this->pending_done = 0;
+
+    lo_message_free(m);
 }
 
 
