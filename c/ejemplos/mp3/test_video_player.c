@@ -1,9 +1,10 @@
 #include <reactor/reactor.h>
 #include <reactor/console.h>
 #include <reactor/exception.h>
+#include <unistd.h>
 #include "video_player.h"
 
-static int read_key(int fd);
+static video_player_command read_key(int fd);
 
 int main(int argc, char* argv[])
 {

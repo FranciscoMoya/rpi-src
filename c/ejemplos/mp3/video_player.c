@@ -1,8 +1,12 @@
 #include "video_player.h"
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
 
 video_player* video_player_new(const char* path)
 {
-    synth_handler* this = malloc(sizeof(video_player));
+    video_player* this = malloc(sizeof(video_player));
     event_handler* ev = (event_handler*) this;
     video_player_init(this, path);
     ev->destroy_self = (event_handler_function) free;
@@ -18,7 +22,7 @@ static void do_nothing(event_handler* ev) {}
 void video_player_init(video_player* this, const char* path)
 {
     event_handler* ev = (event_handler*) this;
-    process_handler_init(&this->scsynth, do_nothing, do_nothing);
+    process_handler_init(&this->parent, do_nothing, do_nothing);
     if (process_handler_is_child(&this->parent))
 	video_player_start(this, path);
     this->destroy_parent_members = ev->destroy_members;
@@ -36,14 +40,14 @@ void video_player_send(video_player* this, video_player_command cmd)
 {
     char buf[4];
     *(unsigned*)buf = cmd;
-    Assert(0 < write(this->parent.out buf, strlen(buf)));
+    Assert(0 < write(this->parent.out, buf, strlen(buf)));
 }
 
 
 static void video_player_start(video_player* this, const char* path)
 {
     event_handler* ev = (event_handler*)this;
-    dup2(open/"/dev/null", O_WRONLY), 1);
+    dup2(open("/dev/null", O_WRONLY), 1);
     dup2(1, 2);
     dup2(ev->fd, 0);
     execlp("/usr/bin/omxplayer", "omxplayer", path, NULL);
