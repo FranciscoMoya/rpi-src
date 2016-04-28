@@ -86,9 +86,10 @@ static void input_handler_init_members(input_handler* h,
     ev->destroy_members = (event_handler_function) input_handler_free_members;
 }
 
-struct timespec remaining_time (const struct timespec* period,
-				const struct timespec* start,
-				const struct timespec* end)
+
+static struct timespec remaining_time (const struct timespec* period,
+				       const struct timespec* start,
+				       const struct timespec* end)
 {
     struct timespec t = *period;
     t.tv_sec -= (end->tv_sec - start->tv_sec);
@@ -124,6 +125,7 @@ static void input_handler_poll(input_handler* h)
 	input_handler_poll_input(h, i);
 }
 
+
 static void* input_handler_thread(thread_handler* h)
 {
     struct timespec start, end;
@@ -138,6 +140,7 @@ static void* input_handler_thread(thread_handler* h)
     }
     return NULL;
 }
+
 
 static void input_handler_handler(event_handler* ev)
 {
