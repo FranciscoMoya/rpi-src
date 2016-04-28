@@ -1,7 +1,12 @@
 #include "analog_handler.h"
 #include <reactor/thread_handler_private.h>
+#include <reactor/exception.h>
+#include <wiringPi.h>
+#include <wiringPiSPI.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
+#include <errno.h>
 
 #define SPI_CLOCK_FREQ 500000
 #define BUF_SIZE 4096
@@ -12,9 +17,7 @@ static void analog_handler_init_members (analog_handler* this,
 					 analog_handler_function low_handler,
 					 analog_handler_function high_handler);
 static void analog_handler_poll(analog_handler* h);
-static struct timespec remaining_time (const struct timespec* period,
-				       const struct timespec* start,
-				       const struct timespec* end);
+static void analog_handler_handler(event_handler* ev);
 
 analog_handler* analog_handler_new (int pin, int low, int high,
 				    analog_handler_function low_handler,
@@ -47,7 +50,6 @@ void analog_handler_destroy (analog_handler* this)
 
 static void* analog_handler_thread(thread_handler* h)
 {
-    struct timespec start, end;
     analog_handler* in = (analog_handler*) h;
     while(!h->cancel)
 	analog_handler_poll(in);
@@ -67,6 +69,7 @@ static void analog_handler_init_members (analog_handler* this,
 					 analog_handler_function low_handler,
 					 analog_handler_function high_handler)
 {
+    thread_handler_init_members(&this->parent, analog_handler_handler);
     this->pin = pin; this->low = low; this->high = high;
     this->low_handler = low_handler; this->high_handler = high_handler;
     this->current = (low + high)/2;
@@ -79,13 +82,27 @@ static void analog_handler_init_members (analog_handler* this,
 }
 
 
+static void analog_handler_handler(event_handler* ev)
+{
+    int input;
+    if (0 > read(ev->fd, &input, sizeof(input)))
+	Throw Exception(errno, "No pudo leer");
+
+    analog_handler* h = (analog_handler*) ev;
+    if (input > h->high)
+	h->high_handler(h, input);
+    else
+	h->low_handler(h, input);
+}
+
+
 static void analog_handler_measure(analog_handler* this);
 
 static void analog_handler_poll(analog_handler* this)
 {
     struct timespec t = { .tv_sec = 1, .tv_nsec = 0 };
     pinMode(this->pin, OUTPUT);
-    digitalWrite(pin, 0);
+    digitalWrite(this->pin, 0);
     nanosleep(&t, NULL);
     pinMode(this->pin, INPUT);
     wiringPiSPIDataRW(0, this->buf, BUF_SIZE);
@@ -118,4 +135,10 @@ static void analog_handler_measure(analog_handler* this)
 {
     int prev = this->current;
     this->current = raise_point(this->buf, 0, BUF_SIZE);
+
+    pipe_handler* ph = (pipe_handler*) this;
+    if (this->current >= this->high && prev < this->high)
+	pipe_handler_write_ne(ph, &this->current, sizeof(this->current));
+    else if (this->current <= this->low && prev > this->low)
+	pipe_handler_write_ne(ph, &this->current, sizeof(this->current));
 }
