@@ -1,6 +1,12 @@
 #include "analog_handler.h"
+#include <reactor/thread_handler_private.h>
+#include <stdlib.h>
 
-// FIXME: declaraciones de funciones estáticas específicas
+static void* analog_handler_thread(thread_handler* this);
+static void analog_handler_init_members (analog_handler* this,
+					 int pin, int low, int high,
+					 analog_handler_function low_handler,
+					 analog_handler_function high_handler);
 
 analog_handler* analog_handler_new (int pin, int low, int high,
 				    analog_handler_function low_handler,
@@ -30,4 +36,15 @@ void analog_handler_destroy (analog_handler* this)
     event_handler_destroy((event_handler*)this);
 }
 
-// FIXME: Definiciones de funciones estáticas específicas
+static void* analog_handler_thread(thread_handler* this)
+{
+    return NULL;
+}
+
+static void analog_handler_init_members (analog_handler* this,
+					 int pin, int low, int high,
+					 analog_handler_function low_handler,
+					 analog_handler_function high_handler)
+{
+}
+
