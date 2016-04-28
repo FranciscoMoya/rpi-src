@@ -1,6 +1,6 @@
 #include <reactor/reactor.h>
-#include <reactor/matrix_handler.h>
-#include <reactor/synth_handler.h>
+#include "matrix_handler.h"
+#include "synth_handler.h"
 #include <wiringPi.h>
 #include <stdio.h>
 
