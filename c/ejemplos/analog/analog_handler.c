@@ -62,6 +62,7 @@ static void* analog_handler_thread(thread_handler* h)
 static void analog_handler_free_members(analog_handler* this)
 {
     this->destroy_parent_members((event_handler*)this);
+    close(this->spi);
     free(this->buf);
 }
 
