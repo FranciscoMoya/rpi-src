@@ -20,6 +20,7 @@ struct analog_handler_ {
     analog_config cfg;
     int spi;
     unsigned current;
+    unsigned discharge_seconds;
     void* buf;
 };
 

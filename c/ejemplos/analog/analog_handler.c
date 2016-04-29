@@ -23,6 +23,7 @@ analog_config DEFAULT_ANALOG_CONFIG = {
     .low = 0, .high = 0,
     .buf_size = 4096,
     .clk_freq = 500000,
+    .discharge_seconds = 1,
     .pin = 0
 };
 
@@ -102,7 +103,7 @@ static void analog_handler_measure(analog_handler* this);
 static void analog_handler_poll(analog_handler* this)
 {
     analog_config* cfg = &this->cfg;
-    struct timespec t = { .tv_sec = 1, .tv_nsec = 0 };
+    struct timespec t = { .tv_sec = cfg->discharge_seconds, .tv_nsec = 0 };
     pinMode(cfg->pin, OUTPUT);
     digitalWrite(cfg->pin, 0);
     nanosleep(&t, NULL);
