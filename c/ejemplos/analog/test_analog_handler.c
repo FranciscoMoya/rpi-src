@@ -17,8 +17,10 @@ int main(int argc, char* argv[])
 {
     wiringPiSetupGpio();
     reactor* r = reactor_new();
-    analog_handler* in = analog_handler_new(25, 100, 200,
-					    bajo, alto);
+    analog_config cfg = DEFAULT_ANALOG_CONFIG;
+    cfg.pin = 25; cfg.low = 100; cfg.high = 200;
+    cfg.low_handler = bajo; cfg.high_handler = alto;
+    analog_handler* in = analog_handler_new(&cfg);
     reactor_add(r, (event_handler*)in);
     reactor_run(r);
     reactor_destroy(r);

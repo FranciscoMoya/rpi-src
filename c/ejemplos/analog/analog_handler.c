@@ -8,9 +8,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define SPI_CLOCK_FREQ 500000
-#define BUF_SIZE 4096
-
 static void* analog_handler_thread(thread_handler* this);
 static void analog_handler_init_members (analog_handler* this,
 					 int pin, int low, int high,
@@ -18,13 +15,22 @@ static void analog_handler_init_members (analog_handler* this,
 					 analog_handler_function high_handler);
 static void analog_handler_poll(analog_handler* h);
 static void analog_handler_handler(event_handler* ev);
+static void do_nothing(analog_handler* this, unsigned v) {}
 
-analog_handler* analog_handler_new (int pin, int low, int high,
-				    analog_handler_function low_handler,
-				    analog_handler_function high_handler)
+
+analog_config DEFAULT_ANALOG_CONFIG = {
+    .low_handler = do_nothing, .high_handler = do_nothing,
+    .low = 0, .high = 0,
+    .buf_size = 4096,
+    .clk_freq = 500000,
+    .pin = 0
+};
+
+
+analog_handler* analog_handler_new (analog_config* cfg)
 {
     analog_handler* h = malloc(sizeof(analog_handler));
-    analog_handler_init_members(h, pin, low, high, low_handler, high_handler);
+    analog_handler_init_members(h, cfg);
     event_handler* ev = (event_handler*) h;
     ev->destroy_self = (event_handler_function) free;
     thread_handler_start (&h->parent, analog_handler_thread);
@@ -32,12 +38,9 @@ analog_handler* analog_handler_new (int pin, int low, int high,
 }
 
 
-void analog_handler_init (analog_handler* this,
-			  int pin, int low, int high,
-			  analog_handler_function low_handler,
-			  analog_handler_function high_handler)
+void analog_handler_init (analog_handler* this, analog_config* cfg)
 {
-    analog_handler_init_members(this, pin, low, high, low_handler, high_handler);
+    analog_handler_init_members(this, cfg);
     thread_handler_start (&this->parent, analog_handler_thread);
 }
 
@@ -65,16 +68,13 @@ static void analog_handler_free_members(analog_handler* this)
 
 
 static void analog_handler_init_members (analog_handler* this,
-					 int pin, int low, int high,
-					 analog_handler_function low_handler,
-					 analog_handler_function high_handler)
+					 analog_config* cfg)
 {
     thread_handler_init_members(&this->parent, analog_handler_handler);
-    this->pin = pin; this->low = low; this->high = high;
-    this->low_handler = low_handler; this->high_handler = high_handler;
-    this->current = (low + high)/2;
-    this->spi = wiringPiSPISetup(0, SPI_CLOCK_FREQ);
-    this->buf = malloc(BUF_SIZE);
+    this->cfg = *cfg;
+    this->current = (cfg->low + cfg->high)/2;
+    this->spi = wiringPiSPISetup(0, cfg->clk_freq);
+    this->buf = malloc(cfg->buf_size);
 
     event_handler* ev = (event_handler*) this;
     this->destroy_parent_members = ev->destroy_members;
@@ -89,10 +89,11 @@ static void analog_handler_handler(event_handler* ev)
 	Throw Exception(errno, "No pudo leer");
 
     analog_handler* h = (analog_handler*) ev;
-    if (input > h->high)
-	h->high_handler(h, input);
+    analog_config* cfg = &h->cfg;
+    if (input > cfg->high)
+	cfg->high_handler(h, input);
     else
-	h->low_handler(h, input);
+	cfg->low_handler(h, input);
 }
 
 
@@ -100,11 +101,12 @@ static void analog_handler_measure(analog_handler* this);
 
 static void analog_handler_poll(analog_handler* this)
 {
+    analog_config* cfg = &this->cfg;
     struct timespec t = { .tv_sec = 1, .tv_nsec = 0 };
-    pinMode(this->pin, OUTPUT);
-    digitalWrite(this->pin, 0);
+    pinMode(cfg->pin, OUTPUT);
+    digitalWrite(cfg->pin, 0);
     nanosleep(&t, NULL);
-    pinMode(this->pin, INPUT);
+    pinMode(this->cfg.pin, INPUT);
     wiringPiSPIDataRW(0, this->buf, BUF_SIZE);
     analog_handler_measure(this);
 }
@@ -149,8 +151,9 @@ static void analog_handler_measure(analog_handler* this)
     this->current = raise_point(this->buf, 0, BUF_SIZE);
 
     pipe_handler* ph = (pipe_handler*) this;
-    if (this->current >= this->high && prev < this->high)
+    analog_config* cfg = &this->cfg;
+    if (this->current >= cfg->high && prev < cfg->high)
 	pipe_handler_write_ne(ph, &this->current, sizeof(this->current));
-    else if (this->current <= this->low && prev > this->low)
+    else if (this->current <= cfg->low && prev > cfg->low)
 	pipe_handler_write_ne(ph, &this->current, sizeof(this->current));
 }
