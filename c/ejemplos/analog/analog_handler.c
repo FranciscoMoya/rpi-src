@@ -118,7 +118,7 @@ static int raise_bit(int c)
 }
 
 
-static int raise_point(const char* buf, int low, int high)
+static int raise_point(const unsigned char* buf, int low, int high)
 {
     if (high - low <= 1)
 	return low + raise_bit(buf[low]);
@@ -131,8 +131,20 @@ static int raise_point(const char* buf, int low, int high)
 }
 
 
+static void check_ends(const unsigned char* buf, size_t size)
+{
+    if (buf[size-1] == 0)
+	Throw Exception(0, "Buffer too small");
+
+    if (this->buf[0] == 0xff)
+	Throw Exception(0, "Capacitor was not discharged");
+}
+
+
 static void analog_handler_measure(analog_handler* this)
 {
+    check_ends(this->buf, BUF_SIZE);
+	
     int prev = this->current;
     this->current = raise_point(this->buf, 0, BUF_SIZE);
 
