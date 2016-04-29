@@ -10,9 +10,7 @@
 
 static void* analog_handler_thread(thread_handler* this);
 static void analog_handler_init_members (analog_handler* this,
-					 int pin, int low, int high,
-					 analog_handler_function low_handler,
-					 analog_handler_function high_handler);
+					 analog_config* cfg);
 static void analog_handler_poll(analog_handler* h);
 static void analog_handler_handler(event_handler* ev);
 static void do_nothing(analog_handler* this, unsigned v) {}
@@ -108,7 +106,7 @@ static void analog_handler_poll(analog_handler* this)
     digitalWrite(cfg->pin, 0);
     nanosleep(&t, NULL);
     pinMode(this->cfg.pin, INPUT);
-    wiringPiSPIDataRW(0, this->buf, BUF_SIZE);
+    wiringPiSPIDataRW(0, this->buf, cfg->buf_size);
     analog_handler_measure(this);
 }
 
@@ -139,20 +137,20 @@ static void check_ends(const unsigned char* buf, size_t size)
     if (buf[size-1] == 0)
 	Throw Exception(0, "Buffer too small");
 
-    if (this->buf[0] == 0xff)
+    if (buf[0] == 0xff)
 	Throw Exception(0, "Capacitor was not discharged");
 }
 
 
 static void analog_handler_measure(analog_handler* this)
 {
-    check_ends(this->buf, BUF_SIZE);
+    analog_config* cfg = &this->cfg;
+    check_ends(this->buf, cfg->buf_size);
 	
     int prev = this->current;
-    this->current = raise_point(this->buf, 0, BUF_SIZE);
+    this->current = raise_point(this->buf, 0, cfg->buf_size);
 
     pipe_handler* ph = (pipe_handler*) this;
-    analog_config* cfg = &this->cfg;
     if (this->current >= cfg->high && prev < cfg->high)
 	pipe_handler_write_ne(ph, &this->current, sizeof(this->current));
     else if (this->current <= cfg->low && prev > cfg->low)

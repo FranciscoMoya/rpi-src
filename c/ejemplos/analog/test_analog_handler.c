@@ -3,12 +3,12 @@
 #include <wiringPi.h>
 #include <stdio.h>
 
-static void bajo(analog_handler* this)
+static void bajo(analog_handler* this, unsigned v)
 {
     puts("Bajo limite inferior");
 }
 		 
-static void alto(analog_handler* this)
+static void alto(analog_handler* this, unsigned v)
 {
     puts("Sobre limite superior");
 }
