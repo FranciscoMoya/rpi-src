@@ -4,9 +4,7 @@ LDFLAGS=-L../../reactor/reactor -pthread -rdynamic
 LDLIBS=-lreactor -lwiringPi -lpthread
 CC=gcc
 
-all: test_video_player
-
-test_video_player: test_video_player.o video_player.o
+all:
 
 clean:
 	$(RM) *~ *.o mp3 test_video_player

@@ -1,4 +1,4 @@
-#include "analog_handler.h"
+#include <reactor/analog_handler.h>
 #include <reactor/reactor.h>
 #include <wiringPi.h>
 #include <stdio.h>

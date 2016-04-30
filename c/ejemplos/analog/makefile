@@ -4,9 +4,7 @@ LDFLAGS=-L../../reactor/reactor -pthread -rdynamic
 LDLIBS=-lreactor -lwiringPi -lpthread
 CC=gcc
 
-all: test_analog_handler
-
-test_analog_handler: test_analog_handler.o analog_handler.o
+all:
 
 clean:
 	$(RM) *~ *.o test_analog_handler
