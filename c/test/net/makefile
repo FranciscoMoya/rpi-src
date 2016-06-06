@@ -1,5 +1,5 @@
 CFLAGS=-Wall
-all: udpc udps
+all: udpc udps tcpc tcps
 
 clean:
-	$(RM) udpc udps
+	$(RM) udpc udps tcpc tcps
