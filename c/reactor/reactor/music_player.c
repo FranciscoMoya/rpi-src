@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <signal.h>
 
-#define MUSIC_PLAYER "/usr/bin/mpg123","music_player","--loop","0"
+#define MUSIC_PLAYER "/usr/bin/mpg123","music_player","--loop","-1"
 
 static void* music_player_thread (thread_handler* ev);
 static void music_player_init_members (music_player* h, const char* path);
